@@ -1,0 +1,76 @@
+package model;
+
+import java.awt.Graphics;
+import java.awt.Rectangle;
+
+public abstract class GameObject() {
+    protected int x;
+    protected int y;
+    protected int width;
+    protected int height;
+
+    /**
+     * Constructor để khởi tạo một GameObject.
+     * @param x x
+     * @param y y
+     * @param width chiều rộng
+     * @param height chiều cao
+     */
+    public GameObject(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    /**
+     * Cập nhật trạng thái của object trong mỗi frame.
+     */
+    public abstract void update();
+
+    /**
+     * Render đối tượng lên màn hình.
+     * @param g đối tượng cần render
+     */
+    public abstract void render(Graphics g);
+
+    /**
+     * Hàm trả về một hình chữ nhật đại diện object.
+     * @return object Rectangle
+     */
+    public Rectangle getBounds() {
+        return new Rectangle(x, y, width, height);
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+}
