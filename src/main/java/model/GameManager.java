@@ -31,7 +31,7 @@ public class GameManager {
         score = 0;
         lives = 3;
         isGameOver = false;
-        isGameWon = true;
+        isGameWon = false;
 
         // Khởi tạo Paddle ở dưới giữa màn hình
         paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 15);

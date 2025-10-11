@@ -3,7 +3,7 @@ package model;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 
-public abstract class GameObject() {
+public abstract class GameObject {
     protected int x;
     protected int y;
     protected int width;
