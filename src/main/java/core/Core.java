@@ -1,5 +1,6 @@
 package core;
 
+import controller.TerminalInputHandler;
 import model.GameManager;
 import view.TerminalView;
 
@@ -18,12 +19,15 @@ public class Core {
             TerminalView view = new TerminalView(80, 24);
 
             // Khởi tạo Controller
+            TerminalInputHandler terminalIntputHandler = new TerminalInputHandler(gameManager.getPaddle());
+            // Tạo một luồng mới
+            Thread inputThread = new Thread(terminalIntputHandler);
+            inputThread.setDaemon(true); // Đặt làm luồng nền để tự tắt khi kết thúc
+            inputThread.start(); // Bắt đầu luồng input
 
             System.out.println("BẮT ĐẦU!");
 
             while (!gameManager.isGameOver() && !gameManager.isGameWon()) {
-                // Controller
-
 
                 // Model
                 gameManager.updateGame();
@@ -39,10 +43,9 @@ public class Core {
             view.render(gameManager);
             System.out.println("KẾT THÚC!");
         } catch (InterruptedException e) {
-            // Xử lý nếu luồn game bị gián đoạn đột ngột
+            // Xử lý nếu luồng game bị gián đoạn đột ngột
             Thread.currentThread().interrupt();
             System.err.println("Luồng game đã bị gián đoạn!");
-
         }
 
     }
