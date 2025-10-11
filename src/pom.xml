@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- THÔNG TIN CƠ BẢN VỀ PROJECT -->
+    <groupId>com.nguyenhieu21016</groupId>
+    <artifactId>ArkanoidProject</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <!-- CẤU HÌNH CÁC THUỘC TÍNH CHUNG -->
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source> <!-- Yêu cầu Java 17 để biên dịch -->
+        <maven.compiler.target>17</maven.compiler.target> <!-- Chạy trên Java 17 -->
+        <javafx.version>17.0.2</javafx.version> <!-- Phiên bản JavaFX, nên khớp với phiên bản Java -->
+    </properties>
+
+    <!-- CÁC THƯ VIỆN BÊN NGOÀI (DEPENDENCIES) -->
+    <dependencies>
+        <!-- Thư viện JavaFX cho các thành phần giao diện  -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- Thư viện JavaFX cho FXML -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+    </dependencies>
+
+    <!-- CÁCH MAVEN SẼ BUILD VÀ CHẠY PROJECT -->
+    <build>
+        <plugins>
+            <!-- Plugin để biên dịch code Java -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Plugin để chạy ứng dụng JavaFX một cách dễ dàng -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <executions>
+                    <execution>
+                        <!-- Default configuration for running -->
+                        <!-- Usage: mvn javafx:run -->
+                        <id>default-cli</id>
+                        <configuration>
+                            <mainClass>arkanoid.Core</mainClass> <!-- SỬA LẠI TÊN NÀY CHO KHỚP -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
