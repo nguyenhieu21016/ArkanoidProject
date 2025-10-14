@@ -14,13 +14,13 @@ public class GameManager {
 
     private int score;
     private int lives;
-    private boolean isGameOver;
-    private boolean isGameWon;
+    private GameState currentState;
 
     /**
      * Constructor để khởi tạo GameManager.
      */
     public GameManager() {
+        this.currentState = GameState.MENU;
         initGame();
     }
 
@@ -30,8 +30,6 @@ public class GameManager {
     public void initGame() {
         score = 0;
         lives = 3;
-        isGameOver = false;
-        isGameWon = false;
 
         // Khởi tạo Paddle ở dưới giữa màn hình
         paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 15);
@@ -42,6 +40,18 @@ public class GameManager {
         // Tạo các Brick cho màn chơi
         loadLevel();
     }
+
+    public GameState getCurrentState() {
+        return currentState;
+    }
+
+    public void startGame() {
+        if (currentState != GameState.RUNNING) {
+            initGame();
+            currentState = GameState.RUNNING;
+        }
+    }
+
 
     /**
      * Reset vị trí của Ball và Paddle.
@@ -81,7 +91,7 @@ public class GameManager {
      * Update chính của game.
      */
     public void updateGame() {
-        if (isGameOver || isGameWon) {
+        if (currentState != GameState.RUNNING) {
             return;
         }
 
@@ -138,7 +148,7 @@ public class GameManager {
     private void handleLifeLost() {
         lives--;
         if (lives <= 0) {
-            isGameOver = true;
+            currentState = GameState.GAME_OVER;
         } else {
             resetBallandPaddle();
         }
@@ -153,7 +163,7 @@ public class GameManager {
                 return;
             }
         }
-        isGameWon = true;
+        currentState = GameState.GAME_WON;
     }
 
     public Ball getBall() {
@@ -174,13 +184,5 @@ public class GameManager {
 
     public int getLives() {
         return lives;
-    }
-
-    public boolean isGameOver() {
-        return isGameOver;
-    }
-
-    public boolean isGameWon() {
-        return isGameWon;
     }
 }

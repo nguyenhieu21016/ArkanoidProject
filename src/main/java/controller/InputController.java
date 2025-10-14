@@ -2,8 +2,8 @@ package controller;
 
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import model.GameManager;
+import model.GameState;
 
 public class InputController {
 
@@ -29,18 +29,27 @@ public class InputController {
     }
 
     private void handleKeyPressed(KeyCode code) {
-        if (gameManager.isGameOver() || gameManager.isGameWon()) {
-            return;
+        GameState currenState = gameManager.getCurrentState();
+
+        if (currenState == GameState.MENU ||
+            currenState == GameState.GAME_OVER ||
+            currenState == GameState.GAME_WON) {
+            if (code == KeyCode.SPACE) {
+                gameManager.startGame();
+            }
+
         }
 
-        switch (code) {
-            case LEFT:
-            case A:
-                gameManager.getPaddle().moveLeft();
-                break;
-            case RIGHT:
-            case D:
-                gameManager.getPaddle().moveRight();
+        if (currenState == GameState.RUNNING) {
+            switch (code) {
+                case LEFT:
+                case A:
+                    gameManager.getPaddle().moveLeft();
+                    break;
+                case RIGHT:
+                case D:
+                    gameManager.getPaddle().moveRight();
+            }
         }
     }
 }
