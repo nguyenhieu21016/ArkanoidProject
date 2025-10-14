@@ -1,6 +1,7 @@
 package core;
 
 import model.GameManager;
+import util.AssetManager;
 import view.GameView;
 import controller.InputController;
 
@@ -21,6 +22,9 @@ public class Core extends Application {
 
         // Controller
         InputController inputController = new InputController(gameManager);
+
+        // Asset
+        AssetManager.getInstance().loadAssets();
 
         // Tạo Scene
         Scene scene = new Scene(gameView.getRoot());

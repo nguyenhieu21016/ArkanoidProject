@@ -7,7 +7,10 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.image.Image;
+import util.AssetManager;
 
+import java.awt.*;
 import java.util.List;
 
 public class GameView {
@@ -48,9 +51,15 @@ public class GameView {
     }
 
     private void render() {
-        // Xóa toàn màn hình
-        gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        // Vẽ nền
+        Image background = AssetManager.getInstance().getImage("background");
+        if (background != null) {
+            gc.drawImage(background, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        }
+
 
         // Lấy các đối tượng
         Paddle paddle = gameManager.getPaddle();
@@ -58,22 +67,47 @@ public class GameView {
         List<Brick> bricks = gameManager.getBricks();
 
         // Vẽ Paddle
-        gc.setFill(Color.LIGHTBLUE);
-        gc.fillRect(paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
+        Image paddleSprite = AssetManager.getInstance().getImage("paddle");
+        if ((paddleSprite != null)) {
+            gc.drawImage(paddleSprite, paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getWidth());
+        } else {
+            gc.setFill(Color.LIGHTBLUE);
+            gc.fillRect(paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
+        }
 
         // Vẽ Ball
-        gc.setFill(Color.WHITE);
-        gc.fillOval(ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight());
+        Image ballSprite = AssetManager.getInstance().getImage("ball");
+        if (ballSprite != null) {
+            gc.drawImage(ballSprite, ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight());
+        } else {
+            gc.setFill(Color.WHITE);
+            gc.fillOval(ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight());
+        }
 
         // Vẽ Bricks
+        Image normalBrickSprite = AssetManager.getInstance().getImage("normal_brick");
+        Image strongBrickSprite = AssetManager.getInstance().getImage("strong_brick");
+
         for (Brick brick : bricks) {
             if (!brick.isDestroyed()) {
+                Image brickSpriteToDraw = null;
+                Color brickColortoDraw = Color.ORANGE;
+
                 if (brick instanceof StrongBrick) {
-                    gc.setFill(Color.DARKGRAY);
+                    brickSpriteToDraw = strongBrickSprite;
+                    brickColortoDraw = Color.DARKGRAY;
                 } else {
-                    gc.setFill(Color.ORANGE);
+                    brickSpriteToDraw = normalBrickSprite;
                 }
-                gc.fillRect(brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
+
+                if ((brickSpriteToDraw != null)) {
+                    gc.drawImage(brickSpriteToDraw, brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
+                } else {
+                    gc.setFill(brickColortoDraw);
+                    gc.fillRect(brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
+                }
+
+                // Vẽ viền
                 gc.setStroke(Color.BLACK);
                 gc.strokeRect(brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
             }
