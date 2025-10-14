@@ -12,21 +12,18 @@
     <!-- CẤU HÌNH CÁC THUỘC TÍNH CHUNG -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source> <!-- Yêu cầu Java 17 để biên dịch -->
-        <maven.compiler.target>17</maven.compiler.target> <!-- Chạy trên Java 17 -->
-        <javafx.version>17.0.2</javafx.version> <!-- Phiên bản JavaFX, nên khớp với phiên bản Java -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <javafx.version>21.0.2</javafx.version>
     </properties>
 
     <!-- CÁC THƯ VIỆN BÊN NGOÀI (DEPENDENCIES) -->
     <dependencies>
-        <!-- Thư viện JavaFX cho các thành phần giao diện  -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
         </dependency>
-
-        <!-- Thư viện JavaFX cho FXML -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
@@ -53,16 +50,19 @@
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
-                <executions>
-                    <execution>
-                        <!-- Default configuration for running -->
-                        <!-- Usage: mvn javafx:run -->
-                        <id>default-cli</id>
-                        <configuration>
-                            <mainClass>arkanoid.Core</mainClass> <!-- SỬA LẠI TÊN NÀY CHO KHỚP -->
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <!-- SỬA LẠI TÊN LỚP MAIN CHO ĐÚNG VỚI PACKAGE 'core' -->
+                    <mainClass>core.Core</mainClass>
+
+                    <!-- THÊM PHẦN NÀY ĐỂ FIX LỖI MODULE KHI CHẠY -->
+                    <options>
+                        <option>-Djava.awt.headless=true</option>
+                        <option>-Dprism.order=sw</option>
+
+                        <option>--add-modules</option>
+                        <option>javafx.controls,javafx.fxml</option>
+                    </options>
+                </configuration>
             </plugin>
         </plugins>
     </build>

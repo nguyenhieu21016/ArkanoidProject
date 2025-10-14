@@ -1,52 +1,41 @@
 package core;
 
-import controller.TerminalInputHandler;
 import model.GameManager;
-import view.TerminalView;
+import view.GameView;
+import controller.InputController;
 
-import java.awt.*;
+import javafx.application.Application;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
 
-public class Core {
-    public static void main(String[] args) {
-        System.out.println("Khởi tạo Arkanoid...");
+public class Core extends Application {
 
-        try {
+    @Override
+    public void start(Stage primaryStage) throws Exception {
 
-            // Khởi tạo Model
-            GameManager gameManager = new GameManager();
+        // Model
+        GameManager gameManager = new GameManager();
 
-            // Khởi tạo View
-            TerminalView view = new TerminalView(80, 24);
+        // View
+        GameView gameView = new GameView(gameManager);
 
-            // Khởi tạo Controller
-            TerminalInputHandler terminalIntputHandler = new TerminalInputHandler(gameManager.getPaddle());
-            // Tạo một luồng mới
-            Thread inputThread = new Thread(terminalIntputHandler);
-            inputThread.setDaemon(true); // Đặt làm luồng nền để tự tắt khi kết thúc
-            inputThread.start(); // Bắt đầu luồng input
+        // Controller
+        InputController inputController = new InputController(gameManager);
 
-            System.out.println("BẮT ĐẦU!");
+        // Tạo Scene
+        Scene scene = new Scene(gameView.getRoot());
+        inputController.listenTo(scene);
 
-            while (!gameManager.isGameOver() && !gameManager.isGameWon()) {
+        primaryStage.setTitle("ArkanoidProject");
+        primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
+        primaryStage.show();
 
-                // Model
-                gameManager.updateGame();
-
-                // View
-                view.render(gameManager);
-
-                // Tạm dừng một chút để gâme không chạy quá nhanh và giảm tải CPU
-                Thread.sleep(50); // 20FPS (1000ms / 50ms)
-            }
-
-            // Kết thúc
-            view.render(gameManager);
-            System.out.println("KẾT THÚC!");
-        } catch (InterruptedException e) {
-            // Xử lý nếu luồng game bị gián đoạn đột ngột
-            Thread.currentThread().interrupt();
-            System.err.println("Luồng game đã bị gián đoạn!");
-        }
-
+        gameView.startGameLoop();
     }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
 }
