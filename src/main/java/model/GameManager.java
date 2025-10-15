@@ -32,7 +32,7 @@ public class GameManager {
         lives = 3;
 
         // Khởi tạo Paddle ở dưới giữa màn hình
-        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 15);
+        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 35);
 
         // Khởi tạo Ball ngay trên màn hình
         resetBallandPaddle();
@@ -123,7 +123,7 @@ public class GameManager {
 
         // Va chạm giữa Ball và Paddle
         if (ball.getBounds().intersects(paddle.getBounds())) {
-            ball.bounceOffPaddle(paddle);
+            ball.calculateBounceFromPaddle(paddle);
         }
 
         // Va chạm giữa Ball và Brick

@@ -1,7 +1,7 @@
 package model;
 
 public class StrongBrick extends Brick {
-    private static final int INITIAL_HITS = 2;
+    private static final int INITIAL_HITS = 3;
 
     /**
      * Contructor để khởi tạo StrongBrick.

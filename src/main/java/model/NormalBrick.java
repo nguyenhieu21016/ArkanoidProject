@@ -10,6 +10,6 @@ public class NormalBrick extends Brick {
      * @param height chiều cao
      */
     public NormalBrick(int x, int y, int width, int height) {
-        super(x, y, width, height, 1);
+        super(x, y, width, height, 2);
     }
 }
