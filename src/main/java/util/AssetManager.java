@@ -1,6 +1,7 @@
 package util;
 
 import javafx.scene.image.Image;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +33,7 @@ public class AssetManager {
      */
     public void loadAssets() {
         loadImage("background", "/images/background.png");
+        loadImage("paddle", "/images/paddle.png");
     }
 
     /**

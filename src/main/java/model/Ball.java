@@ -33,50 +33,30 @@ public class Ball extends MovableObject {
 
     public void calculateBounceFromPaddle(Paddle paddle) {
         // Chống kẹt bóng - reset bóng tại mặt paddle
-        this.y = paddle.getY() - this.height;
+        this.y = paddle.getY() - this.height - 1;
 
-        // Logic tính góc nảy
-        double paddleWidth = paddle.getWidth();
+        // Tính tâm của paddle và bóng
+        double ballCenter = this.x + this.width / 2.0;
+        double paddleCenter = paddle.getX() + paddle.getWidth() / 2.0;
 
-        // Vị trí tương đối của tâm bóng so với mép trái paddle
-        double ballCenterX = this.x + this.width / 2.0;
-        double relativeHitPosition = ballCenterX - paddle.getX();
+        // Tính độ lệch tương đối
+        double relativeIntersectX = ballCenter - paddleCenter;
+        double normalized = relativeIntersectX / (paddle.getWidth() / 2.0);
+
+        // Chọn góc bật
+        double maxBounceAngle = Math.toRadians(75);
+        double bounceAngle = normalized * maxBounceAngle;
 
         // Tính tốc độ tổng hiện tại
         double currenTotalSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+        double newDx = currenTotalSpeed * Math.sin(bounceAngle);
+        double newDy = -currenTotalSpeed * Math.cos(bounceAngle);
 
-        // Nếu tốc độ đi quá thấp, đặt tốc độ tối thiểu
-        final double MIN_SPEED = 4.0;
-        if (currenTotalSpeed < MIN_SPEED) {
-            currenTotalSpeed = MIN_SPEED;
-        }
+        // Momentum cho paddle
+        newDx += 0.2 * paddle.getDx();
 
-        // Chia paddle thành 5 phần
-        double segmentWidth = paddleWidth / 5.0;
-
-        double newDxNormalized = 0;
-        double newDyNormalized = -1; // luôn đi lên
-
-        if (relativeHitPosition < segmentWidth) {
-            newDxNormalized = -0.8;
-        } else if (relativeHitPosition < segmentWidth * 2) {
-            newDxNormalized = -0.4;
-        } else if (relativeHitPosition < segmentWidth * 3) {
-            newDxNormalized = 0;
-        } else if (relativeHitPosition < segmentWidth * 4) {
-            newDxNormalized = 0.4;
-        } else {
-            newDxNormalized = 0.8;
-        }
-
-        // Chuẩn hóa vector hướng (vector đơn vị)
-        double directionLength = Math.sqrt(newDxNormalized * newDxNormalized + newDyNormalized
-        * newDyNormalized);
-        newDxNormalized /= directionLength;
-        newDyNormalized /= directionLength;
-
-        this.dx = (int) Math.round(newDxNormalized * currenTotalSpeed);
-        this.dy = (int) Math.round(newDyNormalized * currenTotalSpeed);
+        dx = (int) Math.round(newDx);
+        dy = (int) Math.round(newDy);
 
         // Đảm bảo không nảy ngang
         if (this.dy == 0) {

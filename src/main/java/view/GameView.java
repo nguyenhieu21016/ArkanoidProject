@@ -88,7 +88,7 @@ public class GameView {
         // Vẽ Paddle
         Image paddleSprite = AssetManager.getInstance().getImage("paddle");
         if ((paddleSprite != null)) {
-            gc.drawImage(paddleSprite, paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getWidth());
+            gc.drawImage(paddleSprite, paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
         } else {
             gc.setFill(Color.LIGHTBLUE);
             gc.fillRect(paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
