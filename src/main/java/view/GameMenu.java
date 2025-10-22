@@ -1,8 +1,11 @@
 package view;
 
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import model.GameManager;
+import util.AssetManager;
 
 public class GameMenu {
     private int selectedIndex = 0;
@@ -15,17 +18,22 @@ public class GameMenu {
      * @param gc bút
      */
     public void render(GraphicsContext gc) {
-        gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, gc.getCanvas().getWidth(), gc.getCanvas().getHeight());
+        Image background = AssetManager.getInstance().getImage("background");
+        if (background != null) {
+            gc.drawImage(background, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        }
 
         gc.setFill(Color.WHITE);
-        gc.setFont(new Font("Consolas", 36));
+        gc.setFont(new Font("m6x11", 36));
         gc.fillText("ArkanoidProject", 150, 150);
 
-        gc.setFont(new Font("Consolas", 28));
+        gc.setFont(new Font("m6x11", 28));
         for (int i = 0; i < options.length; i++) {
             if (i == selectedIndex) {
-                gc.setFill(Color.YELLOW);
+                gc.setFill(Color.web("#B8F4DC"));
             } else {
                 gc.setFill(Color.GRAY);
             }

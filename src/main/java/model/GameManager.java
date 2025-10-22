@@ -61,7 +61,7 @@ public class GameManager {
      */
     private void resetBallandPaddle() {
         paddle.setX(SCREEN_WIDTH / 2 - paddle.getWidth() / 2);
-        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 5, -5);
+        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 6, -6);
     }
 
     /**
@@ -71,14 +71,13 @@ public class GameManager {
         bricks = new ArrayList<>();
         int brickWidth = 70;
         int brickHeight = 30;
-        int padding = 5;
         int offsetX = 50;
         int offsetY = 50;
 
-        for (int row = 0; row < 4; row++) {
-            for (int col = 0; col < 9; col++) {
-                int x = offsetX + col * (brickWidth + padding);
-                int y = offsetY + row * (brickHeight + padding);
+        for (int row = 0; row < 6; row++) {
+            for (int col = 0; col < 10; col++) {
+                int x = offsetX + col * brickWidth;
+                int y = offsetY + row * brickHeight;
 
                 // Tạo xen kẽ gạch thường và gạch cứng
                 if (row % 2 == 0) {

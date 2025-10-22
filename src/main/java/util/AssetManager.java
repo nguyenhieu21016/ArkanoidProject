@@ -35,6 +35,8 @@ public class AssetManager {
         loadImage("background", "/images/background.png");
         loadImage("paddle", "/images/paddle.png");
         loadImage("ball", "/images/ball.png");
+        loadImage("normal_brick", "/images/normal_brick.png");
+        loadImage("strong_brick", "/images/strong_brick.png");
     }
 
     /**

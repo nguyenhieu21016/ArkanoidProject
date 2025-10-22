@@ -68,11 +68,11 @@ public class GameView {
                 break;
             case GAME_OVER:
                 renderGamePlay();
-                renderEndGameMessage("GAME OVER", Color.RED);
+                renderEndGameMessage("GAME OVER", Color.web("#B8F4DC"));
                 break;
             case GAME_WON:
                 renderGamePlay();
-                renderEndGameMessage("GAME WON!", Color.LIMEGREEN);
+                renderEndGameMessage("GAME WON!", Color.web("#B8F4DC"));
                 break;
         }
     }
@@ -135,7 +135,7 @@ public class GameView {
 
         // Vẽ Score & Lives
         gc.setFill(Color.WHITE);
-        gc.setFont(new Font("Arial", 20));
+        gc.setFont(new Font("m6x11", 20));
         gc.fillText("Score: " + gameManager.getScore(), 10, 25);
         gc.fillText("Lives: " + gameManager.getLives(), GameManager.SCREEN_WIDTH - 80, 25);
     }
@@ -145,10 +145,10 @@ public class GameView {
      */
     private void renderMenuScreen() {
         gc.setFill(Color.WHITE);
-        gc.setFont(new Font("Arial", 40));
+        gc.setFont(new Font("m6x11", 40));
         drawTextCentered("ARKANOID", -50);
 
-        gc.setFont(new Font("Arial", 25));
+        gc.setFont(new Font("m6x11", 25));
         drawTextCentered("Press SPACE to Play AGAIN", 0);
     }
 
@@ -160,12 +160,12 @@ public class GameView {
      */
     private void renderEndGameMessage(String message, Color color) {
         gc.setFill(color);
-        gc.setFont(new Font("Arial", 50));
+        gc.setFont(new Font("m6x11", 50));
         drawTextCentered(message, 0);
 
         gc.setFill(Color.WHITE);
-        gc.setFont(new Font("Arial", 20));
-        drawTextCentered("Press SPACE to Play AGAIN", 40);
+        gc.setFont(new Font("m6x11", 20));
+        drawTextCentered("Press SPACE to play again", 40);
     }
 
     private void drawTextCentered(String text, double yOffset) {
