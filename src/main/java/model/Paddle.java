@@ -5,6 +5,8 @@ import java.awt.Graphics;
 
 public class Paddle extends MovableObject {
     private int moveSpeed;
+    private boolean movingLeft = false;
+    private boolean movingRight = false;
 
     /**
      * Constructor để khởi tạo Paddle.
@@ -38,6 +40,12 @@ public class Paddle extends MovableObject {
      * @param screenWidth độ rộng màn hình
      */
     public void update(int screenWidth) {
+        if (movingRight) {
+            moveRight();
+        }
+        if (movingLeft) {
+            moveLeft();
+        }
         if (x < 0) {
             x = 0;
         }
@@ -54,5 +62,13 @@ public class Paddle extends MovableObject {
     public void render(Graphics g) {
         g.setColor(Color.BLUE);
         g.fillRect(x, y, width, height);
+    }
+
+    public void setMovingLeft(boolean status) {
+        movingLeft = status;
+    }
+
+    public void setMovingRight(boolean status) {
+        movingRight = status;
     }
 }

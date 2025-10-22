@@ -35,7 +35,7 @@ public class GameManager {
         lives = 3;
 
         // Khởi tạo Paddle ở dưới giữa màn hình
-        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 30);
+        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 10);
 
         // Khởi tạo Ball ngay trên màn hình
         resetBallandPaddle();

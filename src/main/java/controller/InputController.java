@@ -26,7 +26,9 @@ public class InputController {
         scene.setOnKeyPressed(event -> {
             handleKeyPressed(event.getCode());
         });
-
+        scene.setOnKeyReleased(event -> {
+            handleKeyReleased(event.getCode());
+        });
     }
 
     private void handleKeyPressed(KeyCode code) {
@@ -49,6 +51,7 @@ public class InputController {
                     GameMenu.Action act = gameManager.getMenu().confirm();
                     switch (act) {
                         case START -> gameManager.startGame();
+                        case EXIT -> System.exit(0);
                         default -> {}
                     }
                 }
@@ -60,11 +63,33 @@ public class InputController {
             switch (code) {
                 case LEFT:
                 case A:
-                    gameManager.getPaddle().moveLeft();
+                    gameManager.getPaddle().setMovingLeft(true);
                     break;
                 case RIGHT:
                 case D:
-                    gameManager.getPaddle().moveRight();
+                    gameManager.getPaddle().setMovingRight(true);
+                    break;
+                case ESCAPE:
+                    System.exit(0);
+            }
+        }
+    }
+
+    private void handleKeyReleased(KeyCode code) {
+        GameState currenState = gameManager.getCurrentState();
+
+        if (currenState == GameState.RUNNING) {
+            switch (code) {
+                case LEFT:
+                case A:
+                    gameManager.getPaddle().setMovingLeft(false);
+                    break;
+                case RIGHT:
+                case D:
+                    gameManager.getPaddle().setMovingRight(false);
+                    break;
+                default:
+                    break;
             }
         }
     }
