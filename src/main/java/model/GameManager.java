@@ -61,7 +61,7 @@ public class GameManager {
      */
     private void resetBallandPaddle() {
         paddle.setX(SCREEN_WIDTH / 2 - paddle.getWidth() / 2);
-        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 6, -6);
+        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 5, -5);
     }
 
     /**
@@ -69,14 +69,14 @@ public class GameManager {
      */
     private void loadLevel() {
         bricks = new ArrayList<>();
-        int brickWidth = 75;
+        int brickWidth = 70;
         int brickHeight = 30;
-        int padding = 10;
+        int padding = 5;
         int offsetX = 50;
         int offsetY = 50;
 
         for (int row = 0; row < 4; row++) {
-            for (int col = 0; col < 8; col++) {
+            for (int col = 0; col < 9; col++) {
                 int x = offsetX + col * (brickWidth + padding);
                 int y = offsetY + row * (brickHeight + padding);
 
@@ -131,16 +131,13 @@ public class GameManager {
 
         // Va chạm giữa Ball và Brick
         for (Brick brick : bricks) {
-            if (!brick.isDestroyed() && ball.getBounds().intersects(brick.getBounds())) {
-                ball.bounceY();
-                brick.takeHit();
-
-                if (brick.isDestroyed()) {
-                    score += 10;
-                }
-
+            if (brick.isDestroyed()) {
+                continue;
+            }
+            if (ball.handleCollisionWith(brick)) {
+                score += 10;
                 // Chỉ xử lí va chạm với 1 gạch mỗi frame
-                break;
+                return;
             }
         }
     }

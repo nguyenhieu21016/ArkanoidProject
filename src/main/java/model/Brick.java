@@ -24,9 +24,8 @@ public abstract class Brick extends GameObject {
      * Xử lí khi Brick bị va chạm.
      */
     public void takeHit() {
-        if (hitPoints > 0) {
-            hitPoints--;
-        } else {
+        hitPoints--;
+        if ((hitPoints <= 0)) {
             destroyed = true;
         }
     }

@@ -1,7 +1,7 @@
 package model;
 
 public class StrongBrick extends Brick {
-    private static final int INITIAL_HITS = 3;
+    private static final int S_INITIAL_HITS = 2;
 
     /**
      * Contructor để khởi tạo StrongBrick.
@@ -11,6 +11,6 @@ public class StrongBrick extends Brick {
      * @param height chiều cao
      */
     public StrongBrick(int x, int y, int width, int height) {
-        super(x, y, width, height, INITIAL_HITS);
+        super(x, y, width, height, S_INITIAL_HITS);
     }
 }

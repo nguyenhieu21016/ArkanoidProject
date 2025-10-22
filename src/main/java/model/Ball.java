@@ -1,7 +1,6 @@
 package model;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.*;
 
 public class Ball extends MovableObject {
 
@@ -62,6 +61,41 @@ public class Ball extends MovableObject {
         if (this.dy == 0) {
             this.dy = -1;
         }
+
+    }
+
+    public boolean handleCollisionWith(Brick brick) {
+        // Không va chạm -> trả về false
+        if (!this.getBounds().intersects(brick.getBounds())) {
+            return false;
+        }
+
+        Rectangle ballR = this.getBounds();
+        Rectangle brickR = brick.getBounds();
+        Rectangle inter = ballR.intersection(brickR);
+        if (inter.isEmpty()) {
+            return false;
+        }
+
+        if (inter.width < inter.height) {
+            this.bounceX();
+            if (ballR.getCenterX() < brickR.getCenterX()) {
+                this.x = brick.getX() - this.width - 5;
+            } else {
+                this.x = brick.getX() + brick.getWidth() + 5;
+            }
+        } else {
+            this.bounceY();
+            if (ballR.getCenterY() < brickR.getCenterY()) {
+                this.y = brick.getY() - this.height - 5;
+            } else {
+                this.y = brick.getY() + brick.getHeight() + 5;
+            }
+        }
+        brick.takeHit();
+        this.move();
+        return true;
+
 
     }
 

@@ -34,6 +34,7 @@ public class AssetManager {
     public void loadAssets() {
         loadImage("background", "/images/background.png");
         loadImage("paddle", "/images/paddle.png");
+        loadImage("ball", "/images/ball.png");
     }
 
     /**
