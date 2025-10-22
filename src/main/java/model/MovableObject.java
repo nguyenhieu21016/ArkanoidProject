@@ -27,7 +27,7 @@ public abstract class MovableObject extends GameObject {
         y += dy;
     }
 
-    public int getDx() {
+    public double getDx() {
         return dx;
     }
 
@@ -35,7 +35,7 @@ public abstract class MovableObject extends GameObject {
         this.dx = dx;
     }
 
-    public int getDy() {
+    public double getDy() {
         return dy;
     }
 

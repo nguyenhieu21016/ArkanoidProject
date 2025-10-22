@@ -4,6 +4,7 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import model.GameManager;
 import model.GameState;
+import view.GameMenu;
 
 public class InputController {
 
@@ -38,6 +39,21 @@ public class InputController {
                 gameManager.startGame();
             }
 
+        }
+
+        if (currenState == GameState.MENU) {
+            switch (code) {
+                case UP ->  gameManager.getMenu().moveUp();
+                case DOWN ->  gameManager.getMenu().moveDown();
+                case ENTER -> {
+                    GameMenu.Action act = gameManager.getMenu().confirm();
+                    switch (act) {
+                        case START -> gameManager.startGame();
+                        default -> {}
+                    }
+                }
+                default -> {}
+            }
         }
 
         if (currenState == GameState.RUNNING) {

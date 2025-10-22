@@ -1,5 +1,6 @@
 package view;
 
+import javafx.scene.input.KeyCode;
 import javafx.scene.text.Text;
 import model.*;
 import javafx.animation.AnimationTimer;
@@ -60,7 +61,7 @@ public class GameView {
 
         switch (gameManager.getCurrentState()) {
             case MENU:
-                renderMenuScreen();
+                gameManager.getMenu().render(gc);
                 break;
             case RUNNING:
                 renderGamePlay();

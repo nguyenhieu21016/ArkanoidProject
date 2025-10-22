@@ -1,5 +1,7 @@
 package model;
 
+import view.GameMenu;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,7 @@ public class GameManager {
     private int score;
     private int lives;
     private GameState currentState;
+    private final GameMenu menu = new GameMenu();
 
     /**
      * Constructor để khởi tạo GameManager.
@@ -32,7 +35,7 @@ public class GameManager {
         lives = 3;
 
         // Khởi tạo Paddle ở dưới giữa màn hình
-        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 35);
+        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 30);
 
         // Khởi tạo Ball ngay trên màn hình
         resetBallandPaddle();
@@ -58,7 +61,7 @@ public class GameManager {
      */
     private void resetBallandPaddle() {
         paddle.setX(SCREEN_WIDTH / 2 - paddle.getWidth() / 2);
-        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 4, -4);
+        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 6, -6);
     }
 
     /**
@@ -184,5 +187,9 @@ public class GameManager {
 
     public int getLives() {
         return lives;
+    }
+
+    public GameMenu getMenu() {
+        return menu;
     }
 }
