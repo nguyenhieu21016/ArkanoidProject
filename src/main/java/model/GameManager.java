@@ -13,6 +13,7 @@ public class GameManager {
     private Ball ball;
     private Paddle paddle;
     private List<Brick> bricks;
+    private final List<FloatingText> floatingTexts = new ArrayList<>();
 
     private int score;
     private int lives;
@@ -61,7 +62,8 @@ public class GameManager {
      */
     private void resetBallandPaddle() {
         paddle.setX(SCREEN_WIDTH / 2 - paddle.getWidth() / 2);
-        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 6, -6);
+        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 0, 0);
+        ball.setLaunched(false);
     }
 
     /**
@@ -99,10 +101,16 @@ public class GameManager {
 
         // Cập nhật vị trí các đối tượng di chuyển
         paddle.update(SCREEN_WIDTH);
+        if (ball != null && !ball.isLaunched()) {
+            ball.setX(paddle.getX() + paddle.getWidth() / 2 - 10);
+            ball.setY(paddle.getY() - 15);
+        }
         ball.update();
 
         // Kiểm tra va chạm
         checkCollisions();
+        floatingTexts.removeIf(f-> !f.isActive());
+        floatingTexts.forEach(FloatingText::update);
 
         // Kiểm tra điều kiện thắng
         checkWinCondition();
@@ -135,6 +143,7 @@ public class GameManager {
             }
             if (ball.handleCollisionWith(brick)) {
                 score += 10;
+                floatingTexts.add(new FloatingText(brick.getX() + brick.getWidth() / 2.0, brick.getY(), "+10"));
                 // Chỉ xử lí va chạm với 1 gạch mỗi frame
                 return;
             }
@@ -187,5 +196,9 @@ public class GameManager {
 
     public GameMenu getMenu() {
         return menu;
+    }
+
+    public List<FloatingText> getFloatingTexts() {
+        return floatingTexts;
     }
 }

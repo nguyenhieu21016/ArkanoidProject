@@ -4,6 +4,8 @@ import java.awt.*;
 
 public class Ball extends MovableObject {
 
+    private boolean launched = false;
+
     /**
      * Constructor để khởi tạo Ball.
      * @param x x
@@ -108,5 +110,19 @@ public class Ball extends MovableObject {
     public void render(Graphics g) {
         g.setColor(Color.WHITE);
         g.fillOval(x, y, width, height);
+    }
+
+    public boolean isLaunched() {
+        return launched;
+    }
+
+    public void setLaunched(boolean launched) {
+        this.launched = launched;
+    }
+
+    public void launch(int dx, int dy) {
+        this.dx = dx;
+        this.dy = dy;
+        this.launched = true;
     }
 }

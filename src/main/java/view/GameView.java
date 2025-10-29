@@ -133,6 +133,10 @@ public class GameView {
             }
         }
 
+        for (FloatingText ft : gameManager.getFloatingTexts()) {
+            ft.render(gc);
+        }
+
         // Vẽ Score & Lives
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 20));

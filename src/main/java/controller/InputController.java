@@ -71,6 +71,13 @@ public class InputController {
                     break;
                 case ESCAPE:
                     System.exit(0);
+                case SPACE:
+                    if(!gameManager.getBall().isLaunched()) {
+                        int initDx = Math.random() < 0.5 ? -5 : 5;
+                        int initDy = -5;
+                        gameManager.getBall().launch(initDx, initDy);
+                    }
+                    break;
             }
         }
     }
