@@ -20,6 +20,11 @@ public class GameManager {
     private GameState currentState;
     private final GameMenu menu = new GameMenu();
 
+    private boolean endlessMode = true;
+    private double spawnInterval = 4.0;
+    private double spawnTimer = 0.0;
+
+
     /**
      * Constructor để khởi tạo GameManager.
      */
@@ -36,7 +41,7 @@ public class GameManager {
         lives = 3;
 
         // Khởi tạo Paddle ở dưới giữa màn hình
-        paddle = new Paddle(SCREEN_HEIGHT / 2 - 50, 550, 100, 20, 10);
+        paddle = new Paddle(SCREEN_WIDTH / 2 - 50, 550, 100, 20, 10);
 
         // Khởi tạo Ball ngay trên màn hình
         resetBallandPaddle();
@@ -98,7 +103,6 @@ public class GameManager {
         if (currentState != GameState.RUNNING) {
             return;
         }
-
         // Cập nhật vị trí các đối tượng di chuyển
         paddle.update(SCREEN_WIDTH);
         if (ball != null && !ball.isLaunched()) {
@@ -172,6 +176,20 @@ public class GameManager {
             }
         }
         currentState = GameState.GAME_WON;
+    }
+
+    /**
+     * Dừng game.
+     */
+    public void pauseGame() {
+        if (currentState == GameState.RUNNING) {
+            currentState = GameState.PAUSED;
+        }
+    }
+    public void resumeGame() {
+        if (currentState == GameState.PAUSED) {
+            currentState = GameState.RUNNING;
+        }
     }
 
     public Ball getBall() {

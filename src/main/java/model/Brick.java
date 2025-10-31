@@ -38,6 +38,10 @@ public abstract class Brick extends GameObject {
         return destroyed;
     }
 
+    public int getHitPoints() {
+        return hitPoints;
+    }
+
     @Override
     public void update(){
     }

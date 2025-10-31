@@ -66,6 +66,23 @@ public class GameView {
             case RUNNING:
                 renderGamePlay();
                 break;
+            case PAUSED:
+                renderGamePlay(); // vẫn vẽ gameplay hiện tại
+                //if                Image pauseBg = AssetManager.getInstance().getImage("pause_background");
+                //(pauseBg != null) {
+                    //gc.drawImage(pauseBg, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+                //} else {
+                    gc.setFill(Color.color(0, 0, 0, 0.6)); // overlay mờ
+                    gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+                //}
+
+                gc.setFill(Color.WHITE);
+                gc.setFont(new Font("m6x11", 60));
+                drawTextCentered("PAUSED", -20);
+                gc.setFont(new Font("m6x11", 20));
+                drawTextCentered("Press P to Resume", 20);
+                drawTextCentered("Press R to Restart", 50);
+                break;
             case GAME_OVER:
                 renderGamePlay();
                 renderEndGameMessage("GAME OVER", Color.web("#B8F4DC"));
@@ -107,6 +124,7 @@ public class GameView {
         // Vẽ Bricks
         Image normalBrickSprite = AssetManager.getInstance().getImage("normal_brick");
         Image strongBrickSprite = AssetManager.getInstance().getImage("strong_brick");
+        Image strongCrackedSprite = AssetManager.getInstance().getImage("strong_brick_cracked");
 
         for (Brick brick : bricks) {
             if (!brick.isDestroyed()) {
@@ -114,13 +132,22 @@ public class GameView {
                 Color brickColortoDraw = Color.ORANGE;
 
                 if (brick instanceof StrongBrick) {
-                    brickSpriteToDraw = strongBrickSprite;
+                    try {
+                        if (brick.getHitPoints() == 1 && strongCrackedSprite != null) {
+                            brickSpriteToDraw = strongCrackedSprite;
+                        } else {
+                            brickSpriteToDraw = strongBrickSprite;
+                        }
+                    } catch (NoSuchMethodError | AbstractMethodError e) {
+                        // fallback in case getHitPoints() not present
+                        brickSpriteToDraw = strongBrickSprite;
+                    }
                     brickColortoDraw = Color.DARKGRAY;
                 } else {
                     brickSpriteToDraw = normalBrickSprite;
                 }
 
-                if ((brickSpriteToDraw != null)) {
+                if (brickSpriteToDraw != null) {
                     gc.drawImage(brickSpriteToDraw, brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
                 } else {
                     gc.setFill(brickColortoDraw);

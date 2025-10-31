@@ -78,6 +78,19 @@ public class InputController {
                         gameManager.getBall().launch(initDx, initDy);
                     }
                     break;
+                case P:
+                        gameManager.pauseGame();
+                    break;
+            }
+        }
+        if (currenState == GameState.PAUSED) {
+            switch (code) {
+                case P:
+                    gameManager.resumeGame();
+                    break;
+                case R:
+                    gameManager.startGame();
+                    break;
             }
         }
     }

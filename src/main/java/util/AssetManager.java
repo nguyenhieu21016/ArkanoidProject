@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+
 public class AssetManager {
 
     // Biến static để giữ instance duy nhất
@@ -37,6 +38,8 @@ public class AssetManager {
         loadImage("ball", "/images/ball.png");
         loadImage("normal_brick", "/images/normal_brick.png");
         loadImage("strong_brick", "/images/strong_brick.png");
+        loadImage("strong_brick_cracked", "/images/strong_brick_cracked.png");
+
     }
 
     /**
