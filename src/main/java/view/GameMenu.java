@@ -65,6 +65,33 @@ public class GameMenu {
         gc.setFill(Color.WHITE);
         gc.fillText("Press ESC to return", 260, 500);
     }
+
+    public void renderInstruction(GraphicsContext gc) {
+        Image bg = AssetManager.getInstance().getImage("background");
+        if (bg != null) {
+            gc.drawImage(bg, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        }
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("m6x11", 40));
+        gc.fillText("HOW TO PLAY", 250, 100);
+
+        gc.setFont(new Font("m6x11", 22));
+        int y = 180;
+        gc.fillText("A  D : Move paddle left/right", 180, y);
+        gc.fillText("SPACE : Launch the ball", 180, y + 40);
+        gc.fillText("P : Pause / Resume game", 180, y + 80);
+        gc.fillText("Break all bricks to win!", 180, y + 120);
+        gc.fillText("Don't let the ball fall!", 180, y + 160);
+
+        gc.setFont(new Font("m6x11", 20));
+        gc.setFill(Color.WHITE);
+        gc.fillText("Press ESC to return", 260, 500);
+    }
+
     public void moveUp() {
         selectedIndex = (selectedIndex - 1 + options.length) % options.length;
     }

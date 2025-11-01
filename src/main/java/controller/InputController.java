@@ -53,6 +53,7 @@ public class InputController {
                         case START -> gameManager.startGame();
                         case EXIT -> System.exit(0);
                         case HIGHSCORE -> gameManager.setCurrentState(GameState.HIGHSCORE);
+                        case INSTRUCTION -> gameManager.setCurrentState(GameState.INSTRUCTION);
                         default -> {}
                     }
                 }
@@ -61,6 +62,13 @@ public class InputController {
         }
 
         if (currenState == GameState.HIGHSCORE) {
+            switch (code) {
+                case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
+                default -> {}
+            }
+        }
+
+        if (currenState == GameState.INSTRUCTION) {
             switch (code) {
                 case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
                 default -> {}
@@ -78,7 +86,7 @@ public class InputController {
                     gameManager.getPaddle().setMovingRight(true);
                     break;
                 case ESCAPE:
-                    System.exit(0);
+                    gameManager.setCurrentState(GameState.MENU);
                 case SPACE:
                     if(!gameManager.getBall().isLaunched()) {
                         int initDx = Math.random() < 0.5 ? -5 : 5;
