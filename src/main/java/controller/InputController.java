@@ -52,9 +52,17 @@ public class InputController {
                     switch (act) {
                         case START -> gameManager.startGame();
                         case EXIT -> System.exit(0);
+                        case HIGHSCORE -> gameManager.setCurrentState(GameState.HIGHSCORE);
                         default -> {}
                     }
                 }
+                default -> {}
+            }
+        }
+
+        if (currenState == GameState.HIGHSCORE) {
+            switch (code) {
+                case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
                 default -> {}
             }
         }

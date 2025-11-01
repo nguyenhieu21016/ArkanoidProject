@@ -41,6 +41,30 @@ public class GameMenu {
         }
     }
 
+    public void renderHighScores(GraphicsContext gc) {
+        Image background = AssetManager.getInstance().getImage("background");
+        if (background != null) {
+            gc.drawImage(background, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        }
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("m6x11", 32));
+        gc.fillText("HIGH SCORES", 250, 100);
+
+        var scores = model.HighScoreManager.getInstance().getScores();
+        gc.setFont(new Font("m6x11", 24));
+        for (int i = 0; i < scores.size(); i++) {
+            var s = scores.get(i);
+            gc.fillText((i + 1) + ". " + s.getName() + " - " + s.getScore(), 220, 160 + i * 35);
+        }
+
+        gc.setFont(new Font("m6x11", 20));
+        gc.setFill(Color.WHITE);
+        gc.fillText("Press ESC to return", 260, 500);
+    }
     public void moveUp() {
         selectedIndex = (selectedIndex - 1 + options.length) % options.length;
     }

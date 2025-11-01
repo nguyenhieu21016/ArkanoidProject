@@ -54,6 +54,10 @@ public class GameManager {
         return currentState;
     }
 
+    public void setCurrentState(GameState state) {
+        this.currentState = state;
+    }
+
     public void startGame() {
         if (currentState != GameState.RUNNING) {
             initGame();
@@ -161,6 +165,7 @@ public class GameManager {
         lives--;
         if (lives <= 0) {
             currentState = GameState.GAME_OVER;
+            HighScoreManager.getInstance().addScore("Player", score);
         } else {
             resetBallandPaddle();
         }

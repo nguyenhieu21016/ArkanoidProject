@@ -91,6 +91,12 @@ public class GameView {
                 renderGamePlay();
                 renderEndGameMessage("GAME WON!", Color.web("#B8F4DC"));
                 break;
+            case HIGHSCORE:
+                gameManager.getMenu().renderHighScores(gc);
+                break;
+            case INSTRUCTION:
+                gameManager.getMenu().renderInstruction(gc);
+                break;
         }
     }
 
@@ -171,17 +177,7 @@ public class GameView {
         gc.fillText("Lives: " + gameManager.getLives(), GameManager.SCREEN_WIDTH - 80, 25);
     }
 
-    /**
-     * Vẽ màn hình menu bắt đầu.
-     */
-    private void renderMenuScreen() {
-        gc.setFill(Color.WHITE);
-        gc.setFont(new Font("m6x11", 40));
-        drawTextCentered("ARKANOID", -50);
 
-        gc.setFont(new Font("m6x11", 25));
-        drawTextCentered("Press SPACE to Play AGAIN", 0);
-    }
 
 
     /**
