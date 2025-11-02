@@ -21,22 +21,21 @@ public class GameManager {
     private GameState currentState;
     private final GameMenu menu = new GameMenu();
 
-    // --- cấu hình endless / bố cục ---
+    // Endless
     private final Random random = new Random();
     private boolean endlessMode = true;
-    private double spawnInterval = 12.0;   // số giây giữa các hàng (sinh chậm hơn nữa)
+    private double spawnInterval = 12.0;   // Số giây giữa các hàng
     private double spawnTimer = 0.0;
 
     private int brickWidth = 70;
     private int brickHeight = 30;
-    private int cols;    // tính toán một lần trong initGame()
-    private int offsetX; // tính toán một lần trong initGame()
+    private int cols;
+    private int offsetX;
 
-    // tinh chỉnh sinh hàng/thua mạng
     private double lastUpdateNano = System.nanoTime();
 
     /**
-     * Hàm khởi tạo
+     * Khởi tạo GameManager.
      */
     public GameManager() {
         this.currentState = GameState.MENU;
@@ -44,13 +43,13 @@ public class GameManager {
     }
 
     /**
-     * Khởi tạo/đặt lại trạng thái game
+     * Khởi tạo hoặc đặt lại trạng thái game.
      */
     public void initGame() {
         score = 0;
         lives = 3;
 
-        // tính toán bố cục lưới (không có padding) và căn giữa theo chiều ngang
+        // Tính toán bố cục và căn giữa theo chiều ngang
         cols = Math.max(1, SCREEN_WIDTH / brickWidth);
         offsetX = (SCREEN_WIDTH - cols * brickWidth) / 2;
 
@@ -58,10 +57,10 @@ public class GameManager {
         paddle = new Paddle(SCREEN_WIDTH / 2 - 50, 550, 100, 20, 10);
         resetBallandPaddle();
 
-        // khởi tạo gạch
+        // Khởi tạo gạch
         loadLevel();
 
-        // đặt lại bộ đếm thời gian
+        // Đặt lại bộ đếm thời gian
         spawnTimer = 0.0;
         lastUpdateNano = System.nanoTime();
     }
@@ -83,7 +82,7 @@ public class GameManager {
     }
 
     /**
-     * Đặt lại vị trí bóng và thanh đỡ
+     * Đặt lại vị trí bóng và thanh đỡ về trạng thái ban đầu.
      */
     private void resetBallandPaddle() {
         if (paddle == null) {
@@ -95,10 +94,9 @@ public class GameManager {
     }
 
     /**
-     * Tạo màn chơi ban đầu (sử dụng cols & offsetX để khớp với hàng endless)
+     * Tạo các hàng gạch ban đầu (randomized) khi bắt đầu ván.
      */
     private void loadLevel() {
-        // tạo hàng gạch ban đầu ngẫu nhiên để giống chế độ endless
         bricks = new ArrayList<>();
         int offsetY = 50;
         int rows = 6;
@@ -114,13 +112,13 @@ public class GameManager {
 
                 int r = random.nextInt(100);
                 if (r < 40) {
-                    // ô trống (40%)
+                    // Ô trống (40%)
                     continue;
                 } else if (r < 85) {
-                    // gạch thường
+                    // Gạch thường
                     bricks.add(new NormalBrick(x, y, brickWidth, brickHeight));
                 } else {
-                    // gạch bền
+                    // Cạch cứng
                     bricks.add(new StrongBrick(x, y, brickWidth, brickHeight));
                 }
             }
@@ -128,17 +126,18 @@ public class GameManager {
     }
 
     /**
-     * Cập nhật chính — được gọi mỗi khung hình bởi GameView
+     * Cập nhật trạng thái game mỗi khung.
      */
     public void updateGame() {
         if (currentState != GameState.RUNNING) {
-            // nếu đang tạm dừng hoặc trong menu, không cập nhật logic game
+            // Nếu đang tạm dừng hoặc trong menu, không cập nhật logic game
             lastUpdateNano = System.nanoTime();
             return;
         }
 
+        // Tính delta time kể từ khung trước
         long now = System.nanoTime();
-        double dt = (now - lastUpdateNano) / 1_000_000_000.0; // giây
+        double dt = (now - lastUpdateNano) / 1_000_000_000.0; // Giây
         lastUpdateNano = now;
 
         paddle.update(SCREEN_WIDTH);
@@ -150,6 +149,7 @@ public class GameManager {
             ball.update();
         }
 
+        // Logic sinh hàng mới cho endless
         if (endlessMode) {
             spawnTimer += dt;
             if (spawnTimer >= spawnInterval) {
@@ -158,7 +158,9 @@ public class GameManager {
             }
         }
 
+        // Xử lý va chạm
         checkCollisions();
+        // Dọn gạch đã bị phá
         floatingTexts.removeIf(f -> !f.isActive());
         floatingTexts.forEach(FloatingText::update);
 
@@ -172,17 +174,17 @@ public class GameManager {
             }
         }
 
-        // kiểm tra thắng
+        // Kiểm tra thắng
         checkWinCondition();
     }
 
     /**
-     * Xử lý va chạm
+     * Kiểm tra và xử lý va chạm giữa bóng, gạch, thanh đỡ và tường.
      */
     private void checkCollisions() {
         if (ball == null) return;
 
-        // va chạm với tường
+        // Va chạm với tường
         if (ball.getX() <= 0 || ball.getX() + ball.getWidth() >= SCREEN_WIDTH) {
             ball.bounceX();
         }
@@ -193,12 +195,12 @@ public class GameManager {
             handleLifeLost();
         }
 
-        // thanh đỡ
+        // Thanh đỡ
         if (ball.getBounds().intersects(paddle.getBounds())) {
             ball.calculateBounceFromPaddle(paddle);
         }
 
-        // bóng va chạm với gạch
+        // Bóng va chạm với gạch
         for (Brick brick : new ArrayList<>(bricks)) {
             if (brick.isDestroyed()) continue;
             if (ball.handleCollisionWith(brick)) {
@@ -210,10 +212,10 @@ public class GameManager {
     }
 
     /**
-     * Dịch gạch xuống và sinh hàng mới ở trên cùng (xuất hiện từ phía trên)
+     * Dịch tất cả gạch xuống một hàng và sinh một hàng mới ở trên cùng.
      */
     private void addRowAtTop() {
-        // tìm vị trí Y cao nhất hiện tại
+        // Tìm vị trí Y cao nhất hiện tại
         int prevMinY = Integer.MAX_VALUE;
         for (Brick b : bricks) {
             if (!b.isDestroyed()) prevMinY = Math.min(prevMinY, b.getY());
@@ -238,11 +240,11 @@ public class GameManager {
         for (int attempt = 0; attempt < 5; attempt++) {
             for (int c = 0; c < cols; c++) {
                 int r = random.nextInt(100);
-                if (r < 40) newPattern[c] = 0; // empty
-                else if (r < 85) newPattern[c] = 1; // normal
-                else newPattern[c] = 2; // strong
+                if (r < 40) newPattern[c] = 0; // Empty
+                else if (r < 85) newPattern[c] = 1; // Normal
+                else newPattern[c] = 2; // Strong
             }
-            // nếu giống nhau, đảo một cột ngẫu nhiên để tránh lặp lại
+            // Nếu giống nhau, đảo một cột ngẫu nhiên để tránh lặp lại
             boolean same = true;
             for (int c = 0; c < cols; c++) if (newPattern[c] != prevPattern[c]) { same = false; break; }
             if (!same) break;
@@ -266,6 +268,9 @@ public class GameManager {
         spawnTimer = 0.0;
     }
 
+    /**
+     * Xử lý khi người chơi mất mạng.
+     */
     private void handleLifeLost() {
         lives--;
         if (lives <= 0) {
@@ -276,6 +281,9 @@ public class GameManager {
         }
     }
 
+    /**
+     * Kiểm tra điều kiện chiến thắng.
+     */
     private void checkWinCondition() {
         for (Brick brick : bricks) {
             if (!brick.isDestroyed()) return;
@@ -283,6 +291,9 @@ public class GameManager {
         currentState = GameState.GAME_WON;
     }
 
+    /**
+     * Tạm dừng game; không cập nhật logic.
+     */
     public void pauseGame() {
         if (currentState == GameState.RUNNING) {
             currentState = GameState.PAUSED;
@@ -290,6 +301,9 @@ public class GameManager {
         }
     }
 
+    /**
+     * Tiếp tục game từ trạng thái tạm dừng.
+     */
     public void resumeGame() {
         if (currentState == GameState.PAUSED) {
             currentState = GameState.RUNNING;

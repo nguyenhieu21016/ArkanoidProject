@@ -5,13 +5,13 @@ public abstract class MovableObject extends GameObject {
     protected int dy;
 
     /**
-     * Constructor để khởi tạo một MovableObject.
-     * @param x x
-     * @param y y
-     * @param height chiều cao
-     * @param width chiều rộng
-     * @param dx tốc độ di chuyển theo trục x
-     * @param dy tốc độ di chuyển theo trục y
+     * Khởi tạo một đối tượng có thể di chuyển.
+     * @param x tọa độ X ban đầu
+     * @param y tọa độ Y ban đầu
+     * @param height chiều cao của đối tượng
+     * @param width chiều rộng của đối tượng
+     * @param dx vận tốc theo trục X
+     * @param dy vận tốc theo trục Y
      */
     public MovableObject(int x, int y, int height, int width, int dx, int dy) {
         super(x, y, height, width);
@@ -20,13 +20,14 @@ public abstract class MovableObject extends GameObject {
     }
 
     /**
-     * Method giúp di chuyển.
+     * Cập nhật vị trí của đối tượng dựa trên vận tốc hiện tại.
      */
     public void move() {
         x += dx;
         y += dy;
     }
 
+    // Getter và Setter cho vận tốc di chuyển
     public double getDx() {
         return dx;
     }

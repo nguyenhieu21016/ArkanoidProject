@@ -18,10 +18,13 @@ import java.util.List;
 public class GameView {
 
     private final GameManager gameManager;
-    private final Pane root; // Layout container
+    private final Pane root;
     private final Canvas canvas; // Canvas
-    private final GraphicsContext gc; // Bút
+    private final GraphicsContext gc;
 
+    /**
+     * Khởi tạo GameView.
+     */
     public GameView(GameManager gameManager) {
         this.gameManager = gameManager;
         this.canvas = new Canvas(GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
@@ -33,6 +36,9 @@ public class GameView {
         return root;
     }
 
+    /**
+     * Bắt đầu vòng lặp chính (AnimationTimer) để cập nhật và vẽ mỗi khung.
+     */
     public void startGameLoop() {
         new AnimationTimer() {
             @Override
@@ -47,7 +53,7 @@ public class GameView {
     }
 
     /**
-     * Render tổng, quyết định xem nên vẽ màn hình nào.
+     * Render tổng của màn hình.
      */
     private void render() {
         // Vẽ nền
@@ -101,7 +107,7 @@ public class GameView {
     }
 
     /**
-     * Vẽ các đối tượng game khi đang chơi.
+     * Vẽ các đối tượng khi đang chơi: paddle, bóng, gạch, floating text và HUD.
      */
     private void renderGamePlay() {
         // Lấy các đối tượng
@@ -145,7 +151,6 @@ public class GameView {
                             brickSpriteToDraw = strongBrickSprite;
                         }
                     } catch (NoSuchMethodError | AbstractMethodError e) {
-                        // fallback in case getHitPoints() not present
                         brickSpriteToDraw = strongBrickSprite;
                     }
                     brickColortoDraw = Color.DARKGRAY;
@@ -166,6 +171,7 @@ public class GameView {
             }
         }
 
+        // Vẽ hiệu ứng chữ nổi
         for (FloatingText ft : gameManager.getFloatingTexts()) {
             ft.render(gc);
         }
@@ -179,9 +185,8 @@ public class GameView {
 
 
 
-
     /**
-     * Vẽ thông báo kết thúc game.
+     * Vẽ thông báo kết thúc (Game Over / Win) ở giữa màn hình.
      * @param message thông báo
      * @param color màu chữ
      */
@@ -195,6 +200,9 @@ public class GameView {
         drawTextCentered("Press SPACE to play again", 40);
     }
 
+    /**
+     * Vẽ một chuỗi căn giữa theo trục X với dịch theo trục Y.
+     */
     private void drawTextCentered(String text, double yOffset) {
         Text textNode = new Text(text);
         textNode.setFont(gc.getFont());

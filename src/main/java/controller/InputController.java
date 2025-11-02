@@ -11,16 +11,16 @@ public class InputController {
     private final GameManager gameManager;
 
     /**
-     * Constructor để khởi tạo InputController.
-     * @param gameManager gameManager
+     * Hàm khởi tạo lớp InputController.
+     * @param gameManager gameManager.
      */
     public InputController(GameManager gameManager) {
         this.gameManager = gameManager;
     }
 
     /**
-     * Cho Scene nghe event.
-     * @param scene
+     * Gắn event bàn phím cho Scene nghe thao tác từ player.
+     * @param scene scene.
      */
     public void listenTo(Scene scene) {
         scene.setOnKeyPressed(event -> {
@@ -31,19 +31,24 @@ public class InputController {
         });
     }
 
+    /**
+     * Xử lý event khi player nhấn phím.
+     * @param code code.
+     */
     private void handleKeyPressed(KeyCode code) {
-        GameState currenState = gameManager.getCurrentState();
+        GameState currentState = gameManager.getCurrentState();
 
-        if (currenState == GameState.MENU ||
-            currenState == GameState.GAME_OVER ||
-            currenState == GameState.GAME_WON) {
+        if (currentState == GameState.MENU ||
+            currentState == GameState.GAME_OVER ||
+            currentState == GameState.GAME_WON) {
             if (code == KeyCode.SPACE) {
                 gameManager.startGame();
             }
 
         }
 
-        if (currenState == GameState.MENU) {
+        // Xử lý phím khi đang ở menu
+        if (currentState == GameState.MENU) {
             switch (code) {
                 case UP ->  gameManager.getMenu().moveUp();
                 case DOWN ->  gameManager.getMenu().moveDown();
@@ -61,21 +66,24 @@ public class InputController {
             }
         }
 
-        if (currenState == GameState.HIGHSCORE) {
+        // Xử lý phím khi đang xem bảng điểm
+        if (currentState == GameState.HIGHSCORE) {
             switch (code) {
                 case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
                 default -> {}
             }
         }
 
-        if (currenState == GameState.INSTRUCTION) {
+        // Xử lý phím khi đang xem hướng dẫn
+        if (currentState == GameState.INSTRUCTION) {
             switch (code) {
                 case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
                 default -> {}
             }
         }
 
-        if (currenState == GameState.RUNNING) {
+        // Xử lý phím trong lúc chơi game
+        if (currentState == GameState.RUNNING) {
             switch (code) {
                 case LEFT:
                 case A:
@@ -87,8 +95,9 @@ public class InputController {
                     break;
                 case ESCAPE:
                     gameManager.setCurrentState(GameState.MENU);
+                    break;
                 case SPACE:
-                    if(!gameManager.getBall().isLaunched()) {
+                    if (!gameManager.getBall().isLaunched()) {
                         int initDx = Math.random() < 0.5 ? -5 : 5;
                         int initDy = -5;
                         gameManager.getBall().launch(initDx, initDy);
@@ -99,7 +108,8 @@ public class InputController {
                     break;
             }
         }
-        if (currenState == GameState.PAUSED) {
+        // Xử lý phím khi tạm dừng
+        if (currentState == GameState.PAUSED) {
             switch (code) {
                 case P:
                     gameManager.resumeGame();
@@ -111,10 +121,14 @@ public class InputController {
         }
     }
 
+    /**
+     * Xử lý sự kiện khi player thả phím.
+     * @param code code.
+     */
     private void handleKeyReleased(KeyCode code) {
-        GameState currenState = gameManager.getCurrentState();
+        GameState currentState = gameManager.getCurrentState();
 
-        if (currenState == GameState.RUNNING) {
+        if (currentState == GameState.RUNNING) {
             switch (code) {
                 case LEFT:
                 case A:

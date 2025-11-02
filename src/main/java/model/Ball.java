@@ -2,8 +2,8 @@ package model;
 
 import java.awt.*;
 
-public class Ball extends MovableObject {
 
+public class Ball extends MovableObject {
     private boolean launched = false;
 
     /**
@@ -19,24 +19,27 @@ public class Ball extends MovableObject {
     }
 
     /**
-     * Nảy lại theo chiều dọc.
+     * Đảo chiều vận tốc theo trục Y.
      */
     public void bounceY() {
         dy = -dy;
     }
 
     /**
-     * Nảy lại theo chiều ngang.
+     * Đảo chiều vận tốc theo trục X.
      */
     public void bounceX() {
         dx = -dx;
     }
 
+    /**
+     * Tính vector bật của bóng khi va chạm với paddle.
+     */
     public void calculateBounceFromPaddle(Paddle paddle) {
-        // Chống kẹt bóng - reset bóng tại mặt paddle
+        // Tránh bị kẹt vào paddle
         this.y = paddle.getY() - this.height - 1;
 
-        // Tính tâm của paddle và bóng
+        // Tính tâm để lấy offset
         double ballCenter = this.x + this.width / 2.0;
         double paddleCenter = paddle.getX() + paddle.getWidth() / 2.0;
 
@@ -44,7 +47,7 @@ public class Ball extends MovableObject {
         double relativeIntersectX = ballCenter - paddleCenter;
         double normalized = relativeIntersectX / (paddle.getWidth() / 2.0);
 
-        // Chọn góc bật
+        // Giới hạn góc bật tối đa
         double maxBounceAngle = Math.toRadians(75);
         double bounceAngle = normalized * maxBounceAngle;
 
@@ -53,9 +56,10 @@ public class Ball extends MovableObject {
         double newDx = currenTotalSpeed * Math.sin(bounceAngle);
         double newDy = -currenTotalSpeed * Math.cos(bounceAngle);
 
-        // Momentum cho paddle
+        // Cộng một ít momentum từ paddle
         newDx += 0.2 * paddle.getDx();
 
+        // Gán lại vận tốc, round về int
         dx = (int) Math.round(newDx);
         dy = (int) Math.round(newDy);
 
@@ -66,12 +70,16 @@ public class Ball extends MovableObject {
 
     }
 
+    /**
+     * Kiểm tra và xử lý va chạm giữa bóng và 1 viên gạch.
+     */
     public boolean handleCollisionWith(Brick brick) {
         // Không va chạm -> trả về false
         if (!this.getBounds().intersects(brick.getBounds())) {
             return false;
         }
 
+        // Lấy vùng bao quanh để so sánh
         Rectangle ballR = this.getBounds();
         Rectangle brickR = brick.getBounds();
         Rectangle inter = ballR.intersection(brickR);
@@ -79,6 +87,7 @@ public class Ball extends MovableObject {
             return false;
         }
 
+        // Va chạm theo chiều ngang
         if (inter.width < inter.height) {
             this.bounceX();
             if (ballR.getCenterX() < brickR.getCenterX()) {
@@ -86,6 +95,7 @@ public class Ball extends MovableObject {
             } else {
                 this.x = brick.getX() + brick.getWidth() + 5;
             }
+        // Va chạm theo chiều dọc
         } else {
             this.bounceY();
             if (ballR.getCenterY() < brickR.getCenterY()) {
@@ -94,24 +104,33 @@ public class Ball extends MovableObject {
                 this.y = brick.getY() + brick.getHeight() + 5;
             }
         }
+        // Giảm HP của gạch
         brick.takeHit();
+        // Dịch chuyển bóng để tránh chồng lấn
         this.move();
         return true;
 
 
     }
 
+    /**
+     * Cập nhật trạng thái bóng mỗi khung.
+     */
     @Override
     public void update() {
         this.move();
     }
 
+    /**
+     * Vẽ quả bóng lên màn hình.
+     */
     @Override
     public void render(Graphics g) {
         g.setColor(Color.WHITE);
         g.fillOval(x, y, width, height);
     }
 
+    // Getter và Setter cho trạng thái launch
     public boolean isLaunched() {
         return launched;
     }

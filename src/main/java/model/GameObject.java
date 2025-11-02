@@ -39,9 +39,11 @@ public abstract class GameObject {
      * @return object Rectangle
      */
     public Rectangle getBounds() {
+        // Trả về một hình chữ nhật dùng để kiểm tra va chạm
         return new Rectangle(x, y, width, height);
     }
 
+    // Getter và Setter
     public int getX() {
         return x;
     }
