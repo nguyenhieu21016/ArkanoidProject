@@ -1,8 +1,5 @@
 package model;
 
-import java.awt.Color;
-import java.awt.Graphics;
-
 public class Paddle extends MovableObject {
     private int moveSpeed;
     private boolean movingLeft = false;
@@ -21,13 +18,11 @@ public class Paddle extends MovableObject {
         this.moveSpeed = moveSpeed;
     }
 
-    // Di chuyển paddle sang trái
-    public void moveLeft() {
+    private void moveLeft() {
         x -= moveSpeed;
     }
 
-    // Di chuyển paddle sang phải
-    public void moveRight() {
+    private void moveRight() {
         x += moveSpeed;
     }
 
@@ -36,48 +31,29 @@ public class Paddle extends MovableObject {
      * @param screenWidth độ rộng của màn hình
      */
     public void update(int screenWidth) {
-        // Nếu đang di chuyển sang phải
         if (movingRight) {
             moveRight();
         }
-        // Nếu đang di chuyển sang trái
         if (movingLeft) {
             moveLeft();
         }
-        // Giới hạn paddle không vượt ra ngoài bên trái
         if (x < 0) {
             x = 0;
         }
-        // Giới hạn paddle không vượt ra ngoài bên phải
         if (x + width > screenWidth) {
             x = screenWidth - width;
         }
     }
 
-    /**
-     * Ghi đè phương thức update (hiện không sử dụng, để tương thích với GameObject).
-     */
-    @Override
-    public void update() {
-    }
-
-    /**
-     * Vẽ paddle lên màn hình bằng màu xanh lam.
-     * @param g đối tượng Graphics dùng để vẽ
-     */
-    @Override
-    public void render(Graphics g) {
-        g.setColor(Color.BLUE);
-        g.fillRect(x, y, width, height);
-    }
-
-    // Setter điều khiển hướng di chuyển của paddle
     public void setMovingLeft(boolean status) {
         movingLeft = status;
     }
 
-    // Setter điều khiển hướng di chuyển của paddle
     public void setMovingRight(boolean status) {
         movingRight = status;
+    }
+
+    @Override
+    public void update() {
     }
 }

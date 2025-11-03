@@ -4,154 +4,116 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import model.GameManager;
 import model.GameState;
-import view.GameMenu;
+import model.MenuState;
 
 public class InputController {
 
     private final GameManager gameManager;
 
-    /**
-     * Hàm khởi tạo lớp InputController.
-     * @param gameManager gameManager.
-     */
+    private static final int MAX_PLAYER_NAME_LENGTH = 20;
+    private static final int BALL_LAUNCH_SPEED_X = 5;
+    private static final int BALL_LAUNCH_SPEED_Y = 5;
+
     public InputController(GameManager gameManager) {
         this.gameManager = gameManager;
     }
 
-    /**
-     * Gắn event bàn phím cho Scene nghe thao tác từ player.
-     * @param scene scene.
-     */
     public void listenTo(Scene scene) {
-        scene.setOnKeyPressed(event -> {
-            handleKeyPressed(event.getCode());
-        });
-        scene.setOnKeyReleased(event -> {
-            handleKeyReleased(event.getCode());
-        });
+        scene.setOnKeyPressed(event -> handleKeyPressed(event.getCode()));
+        scene.setOnKeyReleased(event -> handleKeyReleased(event.getCode()));
     }
 
-    /**
-     * Xử lý event khi player nhấn phím.
-     * @param code code.
-     */
     private void handleKeyPressed(KeyCode code) {
         GameState currentState = gameManager.getCurrentState();
 
-        // Xử lý nhập tên khi ở trạng thái NAME_INPUT
-        if (currentState == GameState.NAME_INPUT) {
-            if (code == KeyCode.ENTER) {
-                // Lưu điểm và chuyển sang GAME_OVER
-                gameManager.saveHighScore();
-                return;
-            } else if (code == KeyCode.BACK_SPACE) {
-                // Xóa ký tự cuối
-                String currentName = gameManager.getCurrentPlayerName();
-                if (!currentName.isEmpty()) {
-                    gameManager.setCurrentPlayerName(currentName.substring(0, currentName.length() - 1));
-                }
-                return;
-            } else {
-                // Xử lý nhập ký tự (chỉ chấp nhận chữ cái, số và khoảng trắng, tối đa 20 ký tự)
-                String keyText = code.getName();
-                String currentName = gameManager.getCurrentPlayerName();
-                if (keyText.length() == 1 && currentName.length() < 20) {
-                    char c = keyText.charAt(0);
-                    if (Character.isLetterOrDigit(c) || c == ' ') {
-                        gameManager.setCurrentPlayerName(currentName + c);
-                    }
-                }
-                return;
-            }
+        switch (currentState) {
+            case NAME_INPUT -> handleNameInput(code);
+            case MENU -> handleMenuInput(code);
+            case HIGHSCORE, INSTRUCTION -> handleNavigationInput(code);
+            case RUNNING -> handleGameInput(code);
+            case PAUSED -> handlePausedInput(code);
+            case GAME_OVER, GAME_WON -> handleGameOverInput(code);
         }
+    }
 
-        if (currentState == GameState.MENU ||
-                currentState == GameState.GAME_OVER ||
-                currentState == GameState.GAME_WON) {
-            if (code == KeyCode.SPACE) {
-                gameManager.startGame();
+    private void handleNameInput(KeyCode code) {
+        if (code == KeyCode.ENTER) {
+            gameManager.saveHighScore();
+        } else if (code == KeyCode.BACK_SPACE) {
+            String currentName = gameManager.getCurrentPlayerName();
+            if (!currentName.isEmpty()) {
+                gameManager.setCurrentPlayerName(currentName.substring(0, currentName.length() - 1));
             }
-
+        } else {
+            handleNameInputCharacter(code);
         }
+    }
 
-        // Xử lý phím khi đang ở menu
-        if (currentState == GameState.MENU) {
-            switch (code) {
-                case UP ->  gameManager.getMenu().moveUp();
-                case DOWN ->  gameManager.getMenu().moveDown();
-                case ENTER -> {
-                    GameMenu.Action act = gameManager.getMenu().confirm();
-                    switch (act) {
-                        case START -> gameManager.startGame();
-                        case EXIT -> System.exit(0);
-                        case HIGHSCORE -> gameManager.setCurrentState(GameState.HIGHSCORE);
-                        case INSTRUCTION -> gameManager.setCurrentState(GameState.INSTRUCTION);
-                        default -> {}
-                    }
-                }
-                default -> {}
-            }
-        }
-
-        // Xử lý phím khi đang xem bảng điểm
-        if (currentState == GameState.HIGHSCORE) {
-            switch (code) {
-                case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
-                default -> {}
-            }
-        }
-
-        // Xử lý phím khi đang xem hướng dẫn
-        if (currentState == GameState.INSTRUCTION) {
-            switch (code) {
-                case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
-                default -> {}
-            }
-        }
-
-        // Xử lý phím trong lúc chơi game
-        if (currentState == GameState.RUNNING) {
-            switch (code) {
-                case LEFT:
-                case A:
-                    gameManager.getPaddle().setMovingLeft(true);
-                    break;
-                case RIGHT:
-                case D:
-                    gameManager.getPaddle().setMovingRight(true);
-                    break;
-                case ESCAPE:
-                    gameManager.setCurrentState(GameState.MENU);
-                    break;
-                case SPACE:
-                    if (!gameManager.getBall().isLaunched()) {
-                        int initDx = Math.random() < 0.5 ? -5 : 5;
-                        int initDy = -5;
-                        gameManager.getBall().launch(initDx, initDy);
-                    }
-                    break;
-                case P:
-                    gameManager.pauseGame();
-                    break;
-            }
-        }
-        // Xử lý phím khi tạm dừng
-        if (currentState == GameState.PAUSED) {
-            switch (code) {
-                case P:
-                    gameManager.resumeGame();
-                    break;
-                case R:
-                    gameManager.startGame();
-                    break;
+    private void handleNameInputCharacter(KeyCode code) {
+        String keyText = code.getName();
+        String currentName = gameManager.getCurrentPlayerName();
+        if (keyText.length() == 1 && currentName.length() < MAX_PLAYER_NAME_LENGTH) {
+            char c = keyText.charAt(0);
+            if (Character.isLetterOrDigit(c) || c == ' ') {
+                gameManager.setCurrentPlayerName(currentName + c);
             }
         }
     }
 
-    /**
-     * Xử lý sự kiện khi player thả phím.
-     * @param code code.
-     */
+    private void handleMenuInput(KeyCode code) {
+        MenuState menuState = gameManager.getMenuState();
+        switch (code) {
+            case UP -> menuState.moveUp();
+            case DOWN -> menuState.moveDown();
+            case ENTER -> executeMenuAction(menuState.confirm());
+        }
+    }
+
+    private void executeMenuAction(MenuState.Action action) {
+        switch (action) {
+            case START -> gameManager.startGame();
+            case EXIT -> System.exit(0);
+            case HIGHSCORE -> gameManager.setCurrentState(GameState.HIGHSCORE);
+            case INSTRUCTION -> gameManager.setCurrentState(GameState.INSTRUCTION);
+        }
+    }
+
+    private void handleNavigationInput(KeyCode code) {
+        if (code == KeyCode.ESCAPE) {
+            gameManager.setCurrentState(GameState.MENU);
+        }
+    }
+
+    private void handleGameInput(KeyCode code) {
+        switch (code) {
+            case LEFT, A -> gameManager.getPaddle().setMovingLeft(true);
+            case RIGHT, D -> gameManager.getPaddle().setMovingRight(true);
+            case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
+            case SPACE -> launchBall();
+            case P -> gameManager.pauseGame();
+        }
+    }
+
+    private void launchBall() {
+        if (!gameManager.getBall().isLaunched()) {
+            int dx = Math.random() < 0.5 ? -BALL_LAUNCH_SPEED_X : BALL_LAUNCH_SPEED_X;
+            gameManager.getBall().launch(dx, -BALL_LAUNCH_SPEED_Y);
+        }
+    }
+
+    private void handlePausedInput(KeyCode code) {
+        switch (code) {
+            case P -> gameManager.resumeGame();
+            case R -> gameManager.startGame();
+        }
+    }
+
+    private void handleGameOverInput(KeyCode code) {
+        if (code == KeyCode.SPACE) {
+            gameManager.startGame();
+        }
+    }
+
     private void handleKeyReleased(KeyCode code) {
         GameState currentState = gameManager.getCurrentState();
 

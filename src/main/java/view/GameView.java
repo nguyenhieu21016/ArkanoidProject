@@ -17,12 +17,10 @@ public class GameView {
 
     private final GameManager gameManager;
     private final Pane root;
-    private final Canvas canvas; // Canvas
+    private final Canvas canvas;
     private final GraphicsContext gc;
+    private final GameMenu gameMenu = new GameMenu();
 
-    /**
-     * Khởi tạo GameView.
-     */
     public GameView(GameManager gameManager) {
         this.gameManager = gameManager;
         this.canvas = new Canvas(GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
@@ -34,51 +32,33 @@ public class GameView {
         return root;
     }
 
-    /**
-     * Bắt đầu vòng lặp chính (AnimationTimer) để cập nhật và vẽ mỗi khung.
-     */
+    private static final double OVERLAY_OPACITY = 0.5;
+    private static final double PAUSED_OVERLAY_OPACITY = 0.6;
+    private static final int CURSOR_BLINK_INTERVAL_MS = 500;
+
     public void startGameLoop() {
         new AnimationTimer() {
             @Override
             public void handle(long now) {
-                // Cập nhật logic game
                 gameManager.updateGame();
-
-                // Render
                 render();
             }
         }.start();
     }
 
-    /**
-     * Render tổng của màn hình.
-     */
     private void render() {
-        // Vẽ nền
-        Image background = AssetManager.getInstance().getImage("background");
-        if (background != null) {
-            gc.drawImage(background, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
-        } else {
-            gc.setFill(Color.BLACK);
-            gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
-        }
+        renderBackground();
 
         switch (gameManager.getCurrentState()) {
             case MENU:
-                gameManager.getMenu().render(gc);
+                gameMenu.render(gc, gameManager.getMenuState());
                 break;
             case RUNNING:
                 renderGamePlay();
                 break;
             case PAUSED:
-                renderGamePlay(); // vẫn vẽ gameplay hiện tại
-                //if                Image pauseBg = AssetManager.getInstance().getImage("pause_background");
-                //(pauseBg != null) {
-                //gc.drawImage(pauseBg, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
-                //} else {
-                gc.setFill(Color.color(0, 0, 0, 0.6)); // overlay mờ
-                gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
-                //}
+                renderGamePlay();
+                renderOverlay(PAUSED_OVERLAY_OPACITY);
 
                 gc.setFill(Color.WHITE);
                 gc.setFont(new Font("m6x11", 60));
@@ -100,85 +80,107 @@ public class GameView {
                 renderEndGameMessage("GAME WON!", Color.web("#B8F4DC"));
                 break;
             case HIGHSCORE:
-                gameManager.getMenu().renderHighScores(gc);
+                gameMenu.renderHighScores(gc);
                 break;
             case INSTRUCTION:
-                gameManager.getMenu().renderInstruction(gc);
+                gameMenu.renderInstruction(gc);
                 break;
         }
     }
 
-    /**
-     * Vẽ các đối tượng khi đang chơi: paddle, bóng, gạch, floating text và HUD.
-     */
+    private void renderBackground() {
+        Image background = AssetManager.getInstance().getImage("background");
+        if (background != null) {
+            gc.drawImage(background, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        }
+    }
+
+    private void renderOverlay(double opacity) {
+        gc.setFill(Color.color(0, 0, 0, opacity));
+        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+    }
+
     private void renderGamePlay() {
-        // Lấy các đối tượng
         Paddle paddle = gameManager.getPaddle();
         Ball ball = gameManager.getBall();
         List<Brick> bricks = gameManager.getBricks();
 
-        // Vẽ Paddle
-        Image paddleSprite = AssetManager.getInstance().getImage("paddle");
-        if ((paddleSprite != null)) {
-            gc.drawImage(paddleSprite, paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
+        renderPaddle(paddle);
+        renderBall(ball);
+
+        // Vẽ Bricks
+        renderBricks(bricks);
+        renderFloatingTexts();
+        renderHUD();
+    }
+
+    private void renderPaddle(Paddle paddle) {
+        Image sprite = AssetManager.getInstance().getImage("paddle");
+        if (sprite != null) {
+            gc.drawImage(sprite, paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
         } else {
             gc.setFill(Color.LIGHTBLUE);
             gc.fillRect(paddle.getX(), paddle.getY(), paddle.getWidth(), paddle.getHeight());
         }
+    }
 
-        // Vẽ Ball
-        Image ballSprite = AssetManager.getInstance().getImage("ball");
-        if (ballSprite != null) {
-            gc.drawImage(ballSprite, ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight());
+    private void renderBall(Ball ball) {
+        Image sprite = AssetManager.getInstance().getImage("ball");
+        if (sprite != null) {
+            gc.drawImage(sprite, ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight());
         } else {
             gc.setFill(Color.WHITE);
             gc.fillOval(ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight());
         }
+    }
 
-        // Vẽ Bricks
-        Image normalBrickSprite = AssetManager.getInstance().getImage("normal_brick");
-        Image strongBrickSprite = AssetManager.getInstance().getImage("strong_brick");
-        Image strongCrackedSprite = AssetManager.getInstance().getImage("strong_brick_cracked");
+    private void renderBricks(List<Brick> bricks) {
+        Image normalSprite = AssetManager.getInstance().getImage("normal_brick");
+        Image strongSprite = AssetManager.getInstance().getImage("strong_brick");
+        Image crackedSprite = AssetManager.getInstance().getImage("strong_brick_cracked");
 
         for (Brick brick : bricks) {
             if (!brick.isDestroyed()) {
-                Image brickSpriteToDraw = null;
-                Color brickColortoDraw = Color.ORANGE;
+                Image sprite = getBrickSprite(brick, normalSprite, strongSprite, crackedSprite);
+                Color fallbackColor = (brick instanceof StrongBrick) ? Color.DARKGRAY : Color.ORANGE;
 
-                if (brick instanceof StrongBrick) {
-                    try {
-                        if (brick.getHitPoints() == 1 && strongCrackedSprite != null) {
-                            brickSpriteToDraw = strongCrackedSprite;
-                        } else {
-                            brickSpriteToDraw = strongBrickSprite;
-                        }
-                    } catch (NoSuchMethodError | AbstractMethodError e) {
-                        brickSpriteToDraw = strongBrickSprite;
-                    }
-                    brickColortoDraw = Color.DARKGRAY;
+                if (sprite != null) {
+                    gc.drawImage(sprite, brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
                 } else {
-                    brickSpriteToDraw = normalBrickSprite;
-                }
-
-                if (brickSpriteToDraw != null) {
-                    gc.drawImage(brickSpriteToDraw, brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
-                } else {
-                    gc.setFill(brickColortoDraw);
+                    gc.setFill(fallbackColor);
                     gc.fillRect(brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
                 }
 
-                // Vẽ viền
                 gc.setStroke(Color.BLACK);
                 gc.strokeRect(brick.getX(), brick.getY(), brick.getWidth(), brick.getHeight());
             }
         }
+    }
 
-        // Vẽ hiệu ứng chữ nổi
+    private Image getBrickSprite(Brick brick, Image normalSprite, Image strongSprite, Image crackedSprite) {
+        if (brick instanceof StrongBrick) {
+            try {
+                if (brick.getHitPoints() == 1 && crackedSprite != null) {
+                    return crackedSprite;
+                }
+            } catch (NoSuchMethodError | AbstractMethodError e) {
+                // Fallback to strong sprite
+            }
+            return strongSprite;
+        }
+        return normalSprite;
+    }
+
+    private void renderFloatingTexts() {
         for (FloatingText ft : gameManager.getFloatingTexts()) {
             ft.render(gc);
         }
+    }
 
-        // Vẽ Score & Lives
+    private void renderHUD() {
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 20));
         gc.fillText("Score: " + gameManager.getScore(), 10, 25);
@@ -187,15 +189,8 @@ public class GameView {
 
 
 
-    /**
-     * Vẽ thông báo kết thúc (Game Over / Win) ở giữa màn hình.
-     * @param message thông báo
-     * @param color màu chữ
-     */
     private void renderEndGameMessage(String message, Color color) {
-        // Overlay nền tối
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        renderOverlay(OVERLAY_OPACITY);
 
         gc.setFill(color);
         gc.setFont(new Font("m6x11", 50));
@@ -206,9 +201,6 @@ public class GameView {
         drawTextCentered("Press SPACE to play again", 40);
     }
 
-    /**
-     * Vẽ một chuỗi căn giữa theo trục X với dịch theo trục Y.
-     */
     private void drawTextCentered(String text, double yOffset) {
         Text textNode = new Text(text);
         textNode.setFont(gc.getFont());
@@ -216,42 +208,36 @@ public class GameView {
         gc.fillText(text, (GameManager.SCREEN_WIDTH - textWidth) / 2, GameManager.SCREEN_HEIGHT / 2.0 + yOffset);
     }
 
-    /**
-     * Vẽ màn hình nhập tên người chơi sau khi game over.
-     */
     private void renderNameInput() {
-        // Overlay mờ
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+        renderOverlay(OVERLAY_OPACITY);
 
-        // Tiêu đề
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 40));
         drawTextCentered("Enter Your Name", -100);
 
-        // Hiển thị tên đang nhập với cursor nhấp nháy
         String playerName = gameManager.getCurrentPlayerName();
-        String displayName = playerName.isEmpty() ? "_" : playerName + "_";
-        
-        // Tính toán thời gian để làm cursor nhấp nháy
-        long currentTime = System.currentTimeMillis();
-        boolean showCursor = (currentTime / 500) % 2 == 0;
-        if (!showCursor && !playerName.isEmpty()) {
-            displayName = playerName;
-        }
-        
+        String displayName = formatNameWithCursor(playerName);
+
         gc.setFill(Color.web("#B8F4DC"));
         gc.setFont(new Font("m6x11", 32));
         drawTextCentered(displayName, -30);
 
-        // Hiển thị điểm
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 24));
         drawTextCentered("Score: " + gameManager.getScoreToSave(), 20);
 
-        // Hướng dẫn
         gc.setFont(new Font("m6x11", 18));
         drawTextCentered("Type your name and press ENTER", 70);
         drawTextCentered("Press BACKSPACE to delete", 100);
+    }
+
+    private String formatNameWithCursor(String playerName) {
+        String displayName = playerName.isEmpty() ? "_" : playerName + "_";
+        long currentTime = System.currentTimeMillis();
+        boolean showCursor = (currentTime / CURSOR_BLINK_INTERVAL_MS) % 2 == 0;
+        if (!showCursor && !playerName.isEmpty()) {
+            displayName = playerName;
+        }
+        return displayName;
     }
 }

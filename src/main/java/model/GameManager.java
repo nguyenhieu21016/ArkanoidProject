@@ -1,7 +1,5 @@
 package model;
 
-import view.GameMenu;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -10,6 +8,31 @@ public class GameManager {
 
     public static final int SCREEN_WIDTH = 800;
     public static final int SCREEN_HEIGHT = 600;
+    
+    // Game constants
+    private static final int INITIAL_LIVES = 3;
+    private static final int SCORE_PER_BRICK = 10;
+    private static final int INITIAL_BRICK_ROWS = 6;
+    private static final int BRICK_WIDTH = 70;
+    private static final int BRICK_HEIGHT = 30;
+    private static final int BRICK_OFFSET_Y = 50;
+    
+    // Paddle constants
+    private static final int PADDLE_INIT_X = SCREEN_WIDTH / 2 - 50;
+    private static final int PADDLE_INIT_Y = 550;
+    private static final int PADDLE_WIDTH = 100;
+    private static final int PADDLE_HEIGHT = 20;
+    private static final int PADDLE_SPEED = 10;
+    
+    // Ball constants
+    private static final int BALL_SIZE = 20;
+    private static final int BALL_OFFSET_FROM_PADDLE = 2;
+    
+    // Endless mode constants
+    private static final double SPAWN_INTERVAL_SECONDS = 12.0;
+    private static final double EMPTY_BRICK_CHANCE = 0.40;
+    private static final double NORMAL_BRICK_CHANCE = 0.85;
+    private static final int MAX_PATTERN_ATTEMPTS = 5;
 
     private Ball ball;
     private Paddle paddle;
@@ -19,47 +42,34 @@ public class GameManager {
     private int score;
     private int lives;
     private GameState currentState;
-    private final GameMenu menu = new GameMenu();
+    private final MenuState menuState = new MenuState();
     
-    // Biến lưu tên và điểm khi nhập tên sau game over
     private String currentPlayerName = "";
     private int scoreToSave = 0;
 
-    // Endless
     private final Random random = new Random();
     private boolean endlessMode = true;
-    private double spawnInterval = 12.0;   // Số giây giữa các hàng
+    private double spawnInterval = SPAWN_INTERVAL_SECONDS;
     private double spawnTimer = 0.0;
 
-    private int brickWidth = 70;
-    private int brickHeight = 30;
     private int cols;
     private int offsetX;
-
     private double lastUpdateNano = System.nanoTime();
 
-    /**
-     * Khởi tạo GameManager.
-     */
     public GameManager() {
         this.currentState = GameState.MENU;
         initGame();
     }
 
-    /**
-     * Khởi tạo hoặc đặt lại trạng thái game.
-     */
     public void initGame() {
         score = 0;
-        lives = 3;
+        lives = INITIAL_LIVES;
 
-        // Tính toán bố cục và căn giữa theo chiều ngang
-        cols = Math.max(1, SCREEN_WIDTH / brickWidth);
-        offsetX = (SCREEN_WIDTH - cols * brickWidth) / 2;
+        cols = Math.max(1, SCREEN_WIDTH / BRICK_WIDTH);
+        offsetX = (SCREEN_WIDTH - cols * BRICK_WIDTH) / 2;
 
-        // khởi tạo thanh đỡ và bóng
-        paddle = new Paddle(SCREEN_WIDTH / 2 - 50, 550, 100, 20, 10);
-        resetBallandPaddle();
+        paddle = new Paddle(PADDLE_INIT_X, PADDLE_INIT_Y, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED);
+        resetBallAndPaddle();
 
         // Khởi tạo gạch
         loadLevel();
@@ -85,107 +95,126 @@ public class GameManager {
         }
     }
 
-    /**
-     * Đặt lại vị trí bóng và thanh đỡ về trạng thái ban đầu.
-     */
-    private void resetBallandPaddle() {
+    private void resetBallAndPaddle() {
         if (paddle == null) {
-            paddle = new Paddle(SCREEN_WIDTH / 2 - 50, 550, 100, 20, 10);
+            paddle = new Paddle(PADDLE_INIT_X, PADDLE_INIT_Y, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED);
         }
         paddle.setX(SCREEN_WIDTH / 2 - paddle.getWidth() / 2);
-        ball = new Ball(paddle.getX() + paddle.getWidth() / 2 - 10, paddle.getY() - 20, 20, 0, 0);
+        int ballX = paddle.getX() + paddle.getWidth() / 2 - BALL_SIZE / 2;
+        int ballY = paddle.getY() - BALL_SIZE - BALL_OFFSET_FROM_PADDLE;
+        ball = new Ball(ballX, ballY, BALL_SIZE, 0, 0);
         ball.setLaunched(false);
     }
 
-    /**
-     * Tạo các hàng gạch ban đầu (randomized) khi bắt đầu ván.
-     */
     private void loadLevel() {
         bricks = new ArrayList<>();
-        int offsetY = 50;
-        int rows = 6;
 
-        for (int row = 0; row < rows; row++) {
-            // đảm bảo mỗi hàng có ít nhất một cột trống để tránh khởi đầu không thể chơi
+        for (int row = 0; row < INITIAL_BRICK_ROWS; row++) {
             int forcedEmpty = (cols > 0) ? random.nextInt(cols) : -1;
             for (int col = 0; col < cols; col++) {
-                int x = offsetX + col * brickWidth;
-                int y = offsetY + row * brickHeight;
+                if (col == forcedEmpty) continue;
 
-                if (col == forcedEmpty) continue; // giữ một ô trống được đảm bảo
-
-                int r = random.nextInt(100);
-                if (r < 40) {
-                    // Ô trống (40%)
-                    continue;
-                } else if (r < 85) {
-                    // Gạch thường
-                    bricks.add(new NormalBrick(x, y, brickWidth, brickHeight));
-                } else {
-                    // Cạch cứng
-                    bricks.add(new StrongBrick(x, y, brickWidth, brickHeight));
+                int x = offsetX + col * BRICK_WIDTH;
+                int y = BRICK_OFFSET_Y + row * BRICK_HEIGHT;
+                Brick brick = createRandomBrick(x, y);
+                if (brick != null) {
+                    bricks.add(brick);
                 }
             }
         }
     }
 
-    /**
-     * Cập nhật trạng thái game mỗi khung.
-     */
+    private Brick createRandomBrick(int x, int y) {
+        int r = random.nextInt(100);
+        if (r < (int)(EMPTY_BRICK_CHANCE * 100)) {
+            return null;
+        } else if (r < (int)(NORMAL_BRICK_CHANCE * 100)) {
+            return new NormalBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
+        } else {
+            return new StrongBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
+        }
+    }
+
     public void updateGame() {
         if (currentState != GameState.RUNNING) {
-            // Nếu đang tạm dừng hoặc trong menu, không cập nhật logic game
             lastUpdateNano = System.nanoTime();
             return;
         }
 
-        // Tính delta time kể từ khung trước
         long now = System.nanoTime();
-        double dt = (now - lastUpdateNano) / 1_000_000_000.0; // Giây
+        double deltaTime = (now - lastUpdateNano) / 1_000_000_000.0;
         lastUpdateNano = now;
 
         paddle.update(SCREEN_WIDTH);
         if (ball != null) {
             if (!ball.isLaunched()) {
-                ball.setX(paddle.getX() + paddle.getWidth() / 2 - ball.getWidth() / 2);
-                ball.setY(paddle.getY() - ball.getHeight() - 2);
+                attachBallToPaddle();
             }
             ball.update();
         }
 
-        // Logic sinh hàng mới cho endless
         if (endlessMode) {
-            spawnTimer += dt;
-            if (spawnTimer >= spawnInterval) {
-                spawnTimer -= spawnInterval;
-                addRowAtTop();
-            }
+            updateEndlessMode(deltaTime);
         }
 
-        // Xử lý va chạm
         checkCollisions();
-        // Dọn gạch đã bị phá
-        floatingTexts.removeIf(f -> !f.isActive());
-        floatingTexts.forEach(FloatingText::update);
-
-        bricks.removeIf(b -> b.isDestroyed() || b.getY() > SCREEN_HEIGHT + brickHeight || b.getY() < -brickHeight);
-
-        for (Brick b : bricks) {
-            if (!b.isDestroyed() && (b.getY() + b.getHeight() >= paddle.getY() - 1)) {
-                currentState = GameState.NAME_INPUT;
-                scoreToSave = score;
-                currentPlayerName = "";
-                return;
-            }
-        }
-
-        // Kiểm tra thắng
+        updateFloatingTexts();
+        cleanupBricks();
+        checkBricksReachedPaddle();
         checkWinCondition();
     }
 
-    /**
-     * Kiểm tra và xử lý va chạm giữa bóng, gạch, thanh đỡ và tường.
-     */
+    private void attachBallToPaddle() {
+        ball.setX(paddle.getX() + paddle.getWidth() / 2 - ball.getWidth() / 2);
+        ball.setY(paddle.getY() - ball.getHeight() - BALL_OFFSET_FROM_PADDLE);
+    }
+
+    private void updateEndlessMode(double deltaTime) {
+        spawnTimer += deltaTime;
+        if (spawnTimer >= spawnInterval) {
+            spawnTimer -= spawnInterval;
+            addRowAtTop();
+        }
+    }
+
+    private void updateFloatingTexts() {
+        floatingTexts.removeIf(f -> !f.isActive());
+        floatingTexts.forEach(FloatingText::update);
+    }
+
+    private void cleanupBricks() {
+        bricks.removeIf(b -> b.isDestroyed() || 
+            b.getY() > SCREEN_HEIGHT + BRICK_HEIGHT || 
+            b.getY() < -BRICK_HEIGHT);
+    }
+
+    private void checkBricksReachedPaddle() {
+        for (Brick b : bricks) {
+            if (!b.isDestroyed() && (b.getY() + b.getHeight() >= paddle.getY() - 1)) {
+                triggerGameOver();
+                return;
+            }
+        }
+    }
+
+    private void triggerGameOver() {
+        currentState = GameState.NAME_INPUT;
+        scoreToSave = score;
+        currentPlayerName = "";
+    }
+
+    private void handleBrickCollisions() {
+        for (Brick brick : new ArrayList<>(bricks)) {
+            if (brick.isDestroyed()) continue;
+            if (ball.handleCollisionWith(brick)) {
+                score += SCORE_PER_BRICK;
+                double textX = brick.getX() + brick.getWidth() / 2.0;
+                floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
+                break;
+            }
+        }
+    }
+
     private void checkCollisions() {
         if (ball == null) return;
 
@@ -205,98 +234,122 @@ public class GameManager {
             ball.calculateBounceFromPaddle(paddle);
         }
 
-        // Bóng va chạm với gạch
-        for (Brick brick : new ArrayList<>(bricks)) {
-            if (brick.isDestroyed()) continue;
-            if (ball.handleCollisionWith(brick)) {
-                score += 10;
-                floatingTexts.add(new FloatingText(brick.getX() + brick.getWidth() / 2.0, brick.getY(), "+10"));
-                break;
-            }
-        }
+        handleBrickCollisions();
     }
 
-    /**
-     * Dịch tất cả gạch xuống một hàng và sinh một hàng mới ở trên cùng.
-     */
     private void addRowAtTop() {
-        // Tìm vị trí Y cao nhất hiện tại
-        int prevMinY = Integer.MAX_VALUE;
-        for (Brick b : bricks) {
-            if (!b.isDestroyed()) prevMinY = Math.min(prevMinY, b.getY());
-        }
-        if (prevMinY == Integer.MAX_VALUE) prevMinY = 50;
-
-        int[] prevPattern = new int[cols];
-        for (int c = 0; c < cols; c++) prevPattern[c] = 0;
-        for (Brick b : bricks) {
-            if (b.isDestroyed()) continue;
-            if (b.getY() == prevMinY) {
-                int colIndex = (b.getX() - offsetX) / brickWidth;
-                if (colIndex >= 0 && colIndex < cols) {
-                    prevPattern[colIndex] = (b instanceof StrongBrick) ? 2 : 1;
-                }
-            }
-        }
-
-        for (Brick b : bricks) b.setY(b.getY() + brickHeight);
-
-        int[] newPattern = new int[cols];
-        for (int attempt = 0; attempt < 5; attempt++) {
-            for (int c = 0; c < cols; c++) {
-                int r = random.nextInt(100);
-                if (r < 40) newPattern[c] = 0; // Empty
-                else if (r < 85) newPattern[c] = 1; // Normal
-                else newPattern[c] = 2; // Strong
-            }
-            // Nếu giống nhau, đảo một cột ngẫu nhiên để tránh lặp lại
-            boolean same = true;
-            for (int c = 0; c < cols; c++) if (newPattern[c] != prevPattern[c]) { same = false; break; }
-            if (!same) break;
-            int flip = random.nextInt(cols);
-            newPattern[flip] = (prevPattern[flip] == 0) ? 1 : 0;
-        }
-
-        int newRowY = prevMinY;
-        for (int c = 0; c < cols; c++) {
-            int x = offsetX + c * brickWidth;
-            if (newPattern[c] == 1) {
-                bricks.add(new NormalBrick(x, newRowY, brickWidth, brickHeight));
-            } else if (newPattern[c] == 2) {
-                bricks.add(new StrongBrick(x, newRowY, brickWidth, brickHeight));
-            }
-        }
-
+        int topRowY = findTopRowY();
+        int[] previousPattern = captureTopRowPattern(topRowY);
+        
+        shiftBricksDown();
+        
+        int[] newPattern = generateNewRowPattern(previousPattern);
+        spawnNewRow(topRowY, newPattern);
+        
         spawnTimer = 0.0;
     }
 
-    /**
-     * Xử lý khi người chơi mất mạng.
-     */
+    private int findTopRowY() {
+        int minY = Integer.MAX_VALUE;
+        for (Brick b : bricks) {
+            if (!b.isDestroyed()) {
+                minY = Math.min(minY, b.getY());
+            }
+        }
+        return minY == Integer.MAX_VALUE ? BRICK_OFFSET_Y : minY;
+    }
+
+    private int[] captureTopRowPattern(int topRowY) {
+        int[] pattern = new int[cols];
+        for (Brick b : bricks) {
+            if (b.isDestroyed() || b.getY() != topRowY) continue;
+            int colIndex = (b.getX() - offsetX) / BRICK_WIDTH;
+            if (colIndex >= 0 && colIndex < cols) {
+                pattern[colIndex] = (b instanceof StrongBrick) ? 2 : 1;
+            }
+        }
+        return pattern;
+    }
+
+    private void shiftBricksDown() {
+        for (Brick b : bricks) {
+            b.setY(b.getY() + BRICK_HEIGHT);
+        }
+    }
+
+    private int[] generateNewRowPattern(int[] previousPattern) {
+        int[] newPattern = new int[cols];
+        for (int attempt = 0; attempt < MAX_PATTERN_ATTEMPTS; attempt++) {
+            generateRandomPattern(newPattern);
+            if (!isPatternSame(newPattern, previousPattern)) {
+                break;
+            }
+            randomizeOneColumn(newPattern, previousPattern);
+        }
+        return newPattern;
+    }
+
+    private void generateRandomPattern(int[] pattern) {
+        for (int c = 0; c < cols; c++) {
+            int r = random.nextInt(100);
+            if (r < (int)(EMPTY_BRICK_CHANCE * 100)) {
+                pattern[c] = 0;
+            } else if (r < (int)(NORMAL_BRICK_CHANCE * 100)) {
+                pattern[c] = 1;
+            } else {
+                pattern[c] = 2;
+            }
+        }
+    }
+
+    private boolean isPatternSame(int[] pattern1, int[] pattern2) {
+        for (int c = 0; c < cols; c++) {
+            if (pattern1[c] != pattern2[c]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void randomizeOneColumn(int[] pattern, int[] previousPattern) {
+        int colToFlip = random.nextInt(cols);
+        pattern[colToFlip] = (previousPattern[colToFlip] == 0) ? 1 : 0;
+    }
+
+    private void spawnNewRow(int rowY, int[] pattern) {
+        for (int c = 0; c < cols; c++) {
+            int x = offsetX + c * BRICK_WIDTH;
+            Brick brick = createBrickFromPattern(pattern[c], x, rowY);
+            if (brick != null) {
+                bricks.add(brick);
+            }
+        }
+    }
+
+    private Brick createBrickFromPattern(int type, int x, int y) {
+        return switch (type) {
+            case 1 -> new NormalBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
+            case 2 -> new StrongBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
+            default -> null;
+        };
+    }
+
     private void handleLifeLost() {
         lives--;
         if (lives <= 0) {
-            currentState = GameState.NAME_INPUT;
-            scoreToSave = score;
-            currentPlayerName = "";
+            triggerGameOver();
         } else {
-            resetBallandPaddle();
+            resetBallAndPaddle();
         }
     }
 
-    /**
-     * Kiểm tra điều kiện chiến thắng.
-     */
     private void checkWinCondition() {
-        for (Brick brick : bricks) {
-            if (!brick.isDestroyed()) return;
+        boolean allDestroyed = bricks.stream().allMatch(Brick::isDestroyed);
+        if (allDestroyed) {
+            currentState = GameState.GAME_WON;
         }
-        currentState = GameState.GAME_WON;
     }
 
-    /**
-     * Tạm dừng game; không cập nhật logic.
-     */
     public void pauseGame() {
         if (currentState == GameState.RUNNING) {
             currentState = GameState.PAUSED;
@@ -304,9 +357,6 @@ public class GameManager {
         }
     }
 
-    /**
-     * Tiếp tục game từ trạng thái tạm dừng.
-     */
     public void resumeGame() {
         if (currentState == GameState.PAUSED) {
             currentState = GameState.RUNNING;
@@ -319,25 +369,21 @@ public class GameManager {
     public List<Brick> getBricks() { return bricks; }
     public int getScore() { return score; }
     public int getLives() { return lives; }
-    public GameMenu getMenu() { return menu; }
+    public MenuState getMenuState() { return menuState; }
     public List<FloatingText> getFloatingTexts() { return floatingTexts; }
-    
-    // Getter và setter cho name input
+
     public String getCurrentPlayerName() {
         return currentPlayerName;
     }
-    
+
     public void setCurrentPlayerName(String name) {
         this.currentPlayerName = name;
     }
-    
+
     public int getScoreToSave() {
         return scoreToSave;
     }
-    
-    /**
-     * Lưu điểm cao với tên người chơi và chuyển sang màn hình GAME_OVER.
-     */
+
     public void saveHighScore() {
         String nameToSave = currentPlayerName.isEmpty() ? "Player" : currentPlayerName;
         HighScoreManager.getInstance().addScore(nameToSave, scoreToSave);

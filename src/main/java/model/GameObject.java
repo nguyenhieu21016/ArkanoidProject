@@ -1,6 +1,5 @@
 package model;
 
-import java.awt.Graphics;
 import java.awt.Rectangle;
 
 public abstract class GameObject {
@@ -23,27 +22,11 @@ public abstract class GameObject {
         this.height = height;
     }
 
-    /**
-     * Cập nhật trạng thái của object trong mỗi frame.
-     */
     public abstract void update();
 
-    /**
-     * Render đối tượng lên màn hình.
-     * @param g đối tượng cần render
-     */
-    public abstract void render(Graphics g);
-
-    /**
-     * Hàm trả về một hình chữ nhật đại diện object.
-     * @return object Rectangle
-     */
     public Rectangle getBounds() {
-        // Trả về một hình chữ nhật dùng để kiểm tra va chạm
         return new Rectangle(x, y, width, height);
     }
-
-    // Getter và Setter
     public int getX() {
         return x;
     }
