@@ -38,9 +38,36 @@ public class InputController {
     private void handleKeyPressed(KeyCode code) {
         GameState currentState = gameManager.getCurrentState();
 
+        // Xử lý nhập tên khi ở trạng thái NAME_INPUT
+        if (currentState == GameState.NAME_INPUT) {
+            if (code == KeyCode.ENTER) {
+                // Lưu điểm và chuyển sang GAME_OVER
+                gameManager.saveHighScore();
+                return;
+            } else if (code == KeyCode.BACK_SPACE) {
+                // Xóa ký tự cuối
+                String currentName = gameManager.getCurrentPlayerName();
+                if (!currentName.isEmpty()) {
+                    gameManager.setCurrentPlayerName(currentName.substring(0, currentName.length() - 1));
+                }
+                return;
+            } else {
+                // Xử lý nhập ký tự (chỉ chấp nhận chữ cái, số và khoảng trắng, tối đa 20 ký tự)
+                String keyText = code.getName();
+                String currentName = gameManager.getCurrentPlayerName();
+                if (keyText.length() == 1 && currentName.length() < 20) {
+                    char c = keyText.charAt(0);
+                    if (Character.isLetterOrDigit(c) || c == ' ') {
+                        gameManager.setCurrentPlayerName(currentName + c);
+                    }
+                }
+                return;
+            }
+        }
+
         if (currentState == GameState.MENU ||
-            currentState == GameState.GAME_OVER ||
-            currentState == GameState.GAME_WON) {
+                currentState == GameState.GAME_OVER ||
+                currentState == GameState.GAME_WON) {
             if (code == KeyCode.SPACE) {
                 gameManager.startGame();
             }
@@ -104,7 +131,7 @@ public class InputController {
                     }
                     break;
                 case P:
-                        gameManager.pauseGame();
+                    gameManager.pauseGame();
                     break;
             }
         }

@@ -7,5 +7,6 @@ public enum GameState {
     HIGHSCORE,
     GAME_OVER,
     INSTRUCTION,
-    GAME_WON
+    GAME_WON,
+    NAME_INPUT
 }

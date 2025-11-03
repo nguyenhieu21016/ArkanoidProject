@@ -30,6 +30,10 @@ public class GameMenu {
             gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
         }
 
+        // Overlay nền tối
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+
         // Vẽ tiêu đề trò chơi
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 36));
@@ -59,6 +63,10 @@ public class GameMenu {
             gc.setFill(Color.BLACK);
             gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
         }
+
+        // Overlay nền tối
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
 
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 32));
@@ -91,6 +99,10 @@ public class GameMenu {
             gc.setFill(Color.BLACK);
             gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
         }
+
+        // Overlay nền tối
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
 
         // Tiêu đề hướng dẫn
         gc.setFill(Color.WHITE);

@@ -1,6 +1,5 @@
 package view;
 
-import javafx.scene.input.KeyCode;
 import javafx.scene.text.Text;
 import model.*;
 import javafx.animation.AnimationTimer;
@@ -12,7 +11,6 @@ import javafx.scene.text.Font;
 import javafx.scene.image.Image;
 import util.AssetManager;
 
-import java.awt.*;
 import java.util.List;
 
 public class GameView {
@@ -76,10 +74,10 @@ public class GameView {
                 renderGamePlay(); // vẫn vẽ gameplay hiện tại
                 //if                Image pauseBg = AssetManager.getInstance().getImage("pause_background");
                 //(pauseBg != null) {
-                    //gc.drawImage(pauseBg, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+                //gc.drawImage(pauseBg, 0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
                 //} else {
-                    gc.setFill(Color.color(0, 0, 0, 0.6)); // overlay mờ
-                    gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+                gc.setFill(Color.color(0, 0, 0, 0.6)); // overlay mờ
+                gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
                 //}
 
                 gc.setFill(Color.WHITE);
@@ -88,6 +86,10 @@ public class GameView {
                 gc.setFont(new Font("m6x11", 20));
                 drawTextCentered("Press P to Resume", 20);
                 drawTextCentered("Press R to Restart", 50);
+                break;
+            case NAME_INPUT:
+                renderGamePlay();
+                renderNameInput();
                 break;
             case GAME_OVER:
                 renderGamePlay();
@@ -191,6 +193,10 @@ public class GameView {
      * @param color màu chữ
      */
     private void renderEndGameMessage(String message, Color color) {
+        // Overlay nền tối
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+
         gc.setFill(color);
         gc.setFont(new Font("m6x11", 50));
         drawTextCentered(message, 0);
@@ -208,5 +214,44 @@ public class GameView {
         textNode.setFont(gc.getFont());
         double textWidth = textNode.getLayoutBounds().getWidth();
         gc.fillText(text, (GameManager.SCREEN_WIDTH - textWidth) / 2, GameManager.SCREEN_HEIGHT / 2.0 + yOffset);
+    }
+
+    /**
+     * Vẽ màn hình nhập tên người chơi sau khi game over.
+     */
+    private void renderNameInput() {
+        // Overlay mờ
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
+
+        // Tiêu đề
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("m6x11", 40));
+        drawTextCentered("Enter Your Name", -100);
+
+        // Hiển thị tên đang nhập với cursor nhấp nháy
+        String playerName = gameManager.getCurrentPlayerName();
+        String displayName = playerName.isEmpty() ? "_" : playerName + "_";
+        
+        // Tính toán thời gian để làm cursor nhấp nháy
+        long currentTime = System.currentTimeMillis();
+        boolean showCursor = (currentTime / 500) % 2 == 0;
+        if (!showCursor && !playerName.isEmpty()) {
+            displayName = playerName;
+        }
+        
+        gc.setFill(Color.web("#B8F4DC"));
+        gc.setFont(new Font("m6x11", 32));
+        drawTextCentered(displayName, -30);
+
+        // Hiển thị điểm
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("m6x11", 24));
+        drawTextCentered("Score: " + gameManager.getScoreToSave(), 20);
+
+        // Hướng dẫn
+        gc.setFont(new Font("m6x11", 18));
+        drawTextCentered("Type your name and press ENTER", 70);
+        drawTextCentered("Press BACKSPACE to delete", 100);
     }
 }

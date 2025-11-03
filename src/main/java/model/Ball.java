@@ -95,7 +95,7 @@ public class Ball extends MovableObject {
             } else {
                 this.x = brick.getX() + brick.getWidth() + 5;
             }
-        // Va chạm theo chiều dọc
+            // Va chạm theo chiều dọc
         } else {
             this.bounceY();
             if (ballR.getCenterY() < brickR.getCenterY()) {

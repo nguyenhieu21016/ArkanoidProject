@@ -20,6 +20,10 @@ public class GameManager {
     private int lives;
     private GameState currentState;
     private final GameMenu menu = new GameMenu();
+    
+    // Biến lưu tên và điểm khi nhập tên sau game over
+    private String currentPlayerName = "";
+    private int scoreToSave = 0;
 
     // Endless
     private final Random random = new Random();
@@ -168,8 +172,9 @@ public class GameManager {
 
         for (Brick b : bricks) {
             if (!b.isDestroyed() && (b.getY() + b.getHeight() >= paddle.getY() - 1)) {
-                currentState = GameState.GAME_OVER;
-                HighScoreManager.getInstance().addScore("Player", score);
+                currentState = GameState.NAME_INPUT;
+                scoreToSave = score;
+                currentPlayerName = "";
                 return;
             }
         }
@@ -253,15 +258,12 @@ public class GameManager {
         }
 
         int newRowY = prevMinY;
-        int placed = 0;
         for (int c = 0; c < cols; c++) {
             int x = offsetX + c * brickWidth;
             if (newPattern[c] == 1) {
                 bricks.add(new NormalBrick(x, newRowY, brickWidth, brickHeight));
-                placed++;
             } else if (newPattern[c] == 2) {
                 bricks.add(new StrongBrick(x, newRowY, brickWidth, brickHeight));
-                placed++;
             }
         }
 
@@ -274,8 +276,9 @@ public class GameManager {
     private void handleLifeLost() {
         lives--;
         if (lives <= 0) {
-            currentState = GameState.GAME_OVER;
-            HighScoreManager.getInstance().addScore("Player", score);
+            currentState = GameState.NAME_INPUT;
+            scoreToSave = score;
+            currentPlayerName = "";
         } else {
             resetBallandPaddle();
         }
@@ -318,4 +321,26 @@ public class GameManager {
     public int getLives() { return lives; }
     public GameMenu getMenu() { return menu; }
     public List<FloatingText> getFloatingTexts() { return floatingTexts; }
+    
+    // Getter và setter cho name input
+    public String getCurrentPlayerName() {
+        return currentPlayerName;
+    }
+    
+    public void setCurrentPlayerName(String name) {
+        this.currentPlayerName = name;
+    }
+    
+    public int getScoreToSave() {
+        return scoreToSave;
+    }
+    
+    /**
+     * Lưu điểm cao với tên người chơi và chuyển sang màn hình GAME_OVER.
+     */
+    public void saveHighScore() {
+        String nameToSave = currentPlayerName.isEmpty() ? "Player" : currentPlayerName;
+        HighScoreManager.getInstance().addScore(nameToSave, scoreToSave);
+        currentState = GameState.GAME_OVER;
+    }
 }
