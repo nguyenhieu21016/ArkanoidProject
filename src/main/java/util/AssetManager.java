@@ -39,6 +39,7 @@ public class AssetManager {
         loadImage("normal_brick", "/images/normal_brick.png");
         loadImage("strong_brick", "/images/strong_brick.png");
         loadImage("strong_brick_cracked", "/images/strong_brick_cracked.png");
+        loadImage("powerup_brick", "/images/powerup_brick.png");
 
     }
 

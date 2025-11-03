@@ -12,6 +12,9 @@ import javafx.scene.image.Image;
 import util.AssetManager;
 
 import java.util.List;
+import model.powerup.PowerUp;
+import model.powerup.PowerUpType;
+import model.PowerUpBrick;
 
 public class GameView {
 
@@ -55,6 +58,9 @@ public class GameView {
                 break;
             case RUNNING:
                 renderGamePlay();
+                if (gameManager.isResetting()) {
+                    renderResetTransition();
+                }
                 break;
             case PAUSED:
                 renderGamePlay();
@@ -70,6 +76,9 @@ public class GameView {
             case NAME_INPUT:
                 renderGamePlay();
                 renderNameInput();
+                if (gameManager.isResetting()) {
+                    renderResetTransition();
+                }
                 break;
             case GAME_OVER:
                 renderGamePlay();
@@ -85,6 +94,10 @@ public class GameView {
             case INSTRUCTION:
                 gameMenu.renderInstruction(gc);
                 break;
+        }
+
+        if (gameManager.isTransitionActive()) {
+            renderStateTransitionOverlay();
         }
     }
 
@@ -107,12 +120,14 @@ public class GameView {
         Paddle paddle = gameManager.getPaddle();
         Ball ball = gameManager.getBall();
         List<Brick> bricks = gameManager.getBricks();
+        List<PowerUp> powerUps = gameManager.getPowerUps();
 
         renderPaddle(paddle);
         renderBall(ball);
 
         // Vẽ Bricks
         renderBricks(bricks);
+        renderPowerUps(powerUps);
         renderFloatingTexts();
         renderHUD();
     }
@@ -141,10 +156,11 @@ public class GameView {
         Image normalSprite = AssetManager.getInstance().getImage("normal_brick");
         Image strongSprite = AssetManager.getInstance().getImage("strong_brick");
         Image crackedSprite = AssetManager.getInstance().getImage("strong_brick_cracked");
+        Image powerupSprite = AssetManager.getInstance().getImage("powerup_brick");
 
         for (Brick brick : bricks) {
             if (!brick.isDestroyed()) {
-                Image sprite = getBrickSprite(brick, normalSprite, strongSprite, crackedSprite);
+                Image sprite = getBrickSprite(brick, normalSprite, strongSprite, crackedSprite, powerupSprite);
                 Color fallbackColor = (brick instanceof StrongBrick) ? Color.DARKGRAY : Color.ORANGE;
 
                 if (sprite != null) {
@@ -160,7 +176,10 @@ public class GameView {
         }
     }
 
-    private Image getBrickSprite(Brick brick, Image normalSprite, Image strongSprite, Image crackedSprite) {
+    private Image getBrickSprite(Brick brick, Image normalSprite, Image strongSprite, Image crackedSprite, Image powerupSprite) {
+        if (brick instanceof PowerUpBrick) {
+            return powerupSprite != null ? powerupSprite : normalSprite;
+        }
         if (brick instanceof StrongBrick) {
             try {
                 if (brick.getHitPoints() == 1 && crackedSprite != null) {
@@ -177,6 +196,25 @@ public class GameView {
     private void renderFloatingTexts() {
         for (FloatingText ft : gameManager.getFloatingTexts()) {
             ft.render(gc);
+        }
+    }
+
+    private void renderPowerUps(List<PowerUp> powerUps) {
+        gc.setStroke(Color.BLACK);
+        for (PowerUp p : powerUps) {
+            PowerUpType type = p.getType();
+            Color color = (type == PowerUpType.EXPAND) ? Color.LIMEGREEN : Color.GOLD;
+            String label = (type == PowerUpType.EXPAND) ? "E" : "+1";
+
+            gc.setFill(color);
+            gc.fillOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
+            gc.strokeOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
+
+            gc.setFill(Color.BLACK);
+            gc.setFont(new Font("m6x11", 12));
+            double tx = p.getX() + p.getWidth() / 2.0 - (label.length() == 1 ? 4 : 8);
+            double ty = p.getY() + p.getHeight() / 2.0 + 4;
+            gc.fillText(label, tx, ty);
         }
     }
 
@@ -239,5 +277,30 @@ public class GameView {
             displayName = playerName;
         }
         return displayName;
+    }
+
+    private void renderResetTransition() {
+        double progress = gameManager.getResetProgress();
+        double opacity;
+
+        if (progress < 0.5) {
+            opacity = progress * 2.0;
+        } else {
+            opacity = (1.0 - progress) * 2.0;
+        }
+
+        opacity = Math.min(0.7, opacity);
+        renderOverlay(opacity);
+
+        gc.setFill(Color.web("#B8F4DC"));
+        gc.setFont(new Font("m6x11", 48));
+        drawTextCentered("Life Lost!", 0);
+    }
+
+    private void renderStateTransitionOverlay() {
+        double p = gameManager.getTransitionProgress();
+        double opacity = p < 0.5 ? (p * 2.0) : ((1.0 - p) * 2.0);
+        opacity = Math.min(0.7, Math.max(0.0, opacity));
+        renderOverlay(opacity);
     }
 }

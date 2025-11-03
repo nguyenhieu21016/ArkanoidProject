@@ -53,6 +53,18 @@ public class Paddle extends MovableObject {
         movingRight = status;
     }
 
+    public boolean isMovingLeft() {
+        return movingLeft;
+    }
+
+    public boolean isMovingRight() {
+        return movingRight;
+    }
+
+    public int getMoveSpeed() {
+        return moveSpeed;
+    }
+
     @Override
     public void update() {
     }

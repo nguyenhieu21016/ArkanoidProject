@@ -18,8 +18,8 @@ public class Core extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-        // Model - quản lí logic game
-        GameManager gameManager = new GameManager();
+        // Model - quản lí logic game (Singleton)
+        GameManager gameManager = GameManager.getInstance();
 
         // View - xử lí giao diện
         GameView gameView = new GameView(gameManager);

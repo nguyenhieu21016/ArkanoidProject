@@ -1,10 +1,16 @@
+
 package model;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import model.powerup.PowerUp;
+
 
 public class GameManager {
+
+    // Singleton instance
+    private static final GameManager INSTANCE = new GameManager(true);
 
     public static final int SCREEN_WIDTH = 800;
     public static final int SCREEN_HEIGHT = 600;
@@ -22,14 +28,14 @@ public class GameManager {
     private static final int PADDLE_INIT_Y = 550;
     private static final int PADDLE_WIDTH = 100;
     private static final int PADDLE_HEIGHT = 20;
-    private static final int PADDLE_SPEED = 10;
+    private static final int PADDLE_SPEED = 12;
     
     // Ball constants
     private static final int BALL_SIZE = 20;
     private static final int BALL_OFFSET_FROM_PADDLE = 2;
     
     // Endless mode constants
-    private static final double SPAWN_INTERVAL_SECONDS = 12.0;
+    private static final double SPAWN_INTERVAL_SECONDS = 16.0;
     private static final double EMPTY_BRICK_CHANCE = 0.40;
     private static final double NORMAL_BRICK_CHANCE = 0.85;
     private static final int MAX_PATTERN_ATTEMPTS = 5;
@@ -38,6 +44,7 @@ public class GameManager {
     private Paddle paddle;
     private List<Brick> bricks;
     private final List<FloatingText> floatingTexts = new ArrayList<>();
+    private final List<PowerUp> powerUps = new ArrayList<>();
 
     private int score;
     private int lives;
@@ -56,9 +63,30 @@ public class GameManager {
     private int offsetX;
     private double lastUpdateNano = System.nanoTime();
 
-    public GameManager() {
+    // Power-up effect: expand paddle
+    private boolean paddleExpanded = false;
+    private double expandTimer = 0.0;
+    private int originalPaddleWidth = -1;
+
+    // Transitions
+    private boolean isResetting = false;
+    private double resetTimer = 0.0;
+    private static final double RESET_DURATION = 0.3;
+
+    private final StateTransition stateTransition = new StateTransition();
+    private static final double STATE_TRANSITION_DURATION = 0.4;
+
+    // Private constructor cho Singleton; cờ nội bộ để phân biệt với truy cập từ bên ngoài
+    private GameManager(boolean internal) {
         this.currentState = GameState.MENU;
         initGame();
+    }
+
+    /**
+     * Truy cập thể hiện duy nhất của GameManager.
+     */
+    public static GameManager getInstance() {
+        return INSTANCE;
     }
 
     public void initGame() {
@@ -77,6 +105,8 @@ public class GameManager {
         // Đặt lại bộ đếm thời gian
         spawnTimer = 0.0;
         lastUpdateNano = System.nanoTime();
+        powerUps.clear();
+        clearExpandEffect();
     }
 
     public GameState getCurrentState() {
@@ -90,7 +120,7 @@ public class GameManager {
     public void startGame() {
         if (currentState != GameState.RUNNING) {
             initGame();
-            currentState = GameState.RUNNING;
+            startStateTransition(GameState.RUNNING);
             lastUpdateNano = System.nanoTime();
         }
     }
@@ -124,26 +154,55 @@ public class GameManager {
         }
     }
 
+    // Sử dụng Factory để tạo gạch ngẫu nhiên, gom logic khởi tạo về một nơi.
     private Brick createRandomBrick(int x, int y) {
-        int r = random.nextInt(100);
-        if (r < (int)(EMPTY_BRICK_CHANCE * 100)) {
-            return null;
-        } else if (r < (int)(NORMAL_BRICK_CHANCE * 100)) {
-            return new NormalBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
-        } else {
-            return new StrongBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
-        }
+        return BrickFactory.createRandomBrick(
+                random,
+                x,
+                y,
+                BRICK_WIDTH,
+                BRICK_HEIGHT,
+                EMPTY_BRICK_CHANCE,
+                NORMAL_BRICK_CHANCE
+        );
     }
 
     public void updateGame() {
-        if (currentState != GameState.RUNNING) {
-            lastUpdateNano = System.nanoTime();
-            return;
-        }
-
         long now = System.nanoTime();
         double deltaTime = (now - lastUpdateNano) / 1_000_000_000.0;
         lastUpdateNano = now;
+
+        // Generic state transition update (runs regardless of state)
+        stateTransition.update(deltaTime);
+        if (stateTransition.shouldSwitchNow()) {
+            currentState = stateTransition.getToState();
+            stateTransition.markSwitchedHandled();
+        }
+
+        if (currentState != GameState.RUNNING) {
+            return;
+        }
+
+        if (isResetting) {
+            resetTimer += deltaTime;
+            if (resetTimer >= RESET_DURATION / 2.0) {
+                if (ball == null || ball.isLaunched()) {
+                    resetBallAndPaddle();
+                }
+            }
+            if (resetTimer >= RESET_DURATION) {
+                isResetting = false;
+                resetTimer = 0.0;
+            }
+            // Allow paddle to move during reset and keep ball attached
+            paddle.update(SCREEN_WIDTH);
+            if (ball != null && !ball.isLaunched()) {
+                attachBallToPaddle();
+            }
+            return;
+        }
+
+        // No physics suppression needed; state transitions are handled generically
 
         paddle.update(SCREEN_WIDTH);
         if (ball != null) {
@@ -158,6 +217,8 @@ public class GameManager {
         }
 
         checkCollisions();
+        updatePowerUps(deltaTime);
+        updateEffects(deltaTime);
         updateFloatingTexts();
         cleanupBricks();
         checkBricksReachedPaddle();
@@ -198,9 +259,10 @@ public class GameManager {
     }
 
     private void triggerGameOver() {
-        currentState = GameState.NAME_INPUT;
+        // Prepare NAME_INPUT data and start transition
         scoreToSave = score;
         currentPlayerName = "";
+        startStateTransition(GameState.NAME_INPUT);
     }
 
     private void handleBrickCollisions() {
@@ -208,25 +270,43 @@ public class GameManager {
             if (brick.isDestroyed()) continue;
             if (ball.handleCollisionWith(brick)) {
                 score += SCORE_PER_BRICK;
+                // Sound removed
                 double textX = brick.getX() + brick.getWidth() / 2.0;
                 floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
+                if (brick.isDestroyed() && brick instanceof PowerUpBrick) {
+                    PowerUp p = ((PowerUpBrick) brick).spawnPowerUp();
+                    if (p != null) {
+                        powerUps.add(p);
+                    }
+                }
                 break;
             }
         }
     }
 
+    /**
+     * Kiểm tra toàn bộ va chạm trong frame hiện tại:
+     * - Bóng với tường, đáy màn hình (mất mạng)
+     * - Bóng với thanh đỡ (tính toán góc nảy)
+     * - Bóng với gạch (cập nhật điểm, hiệu ứng chữ nổi)
+     */
     private void checkCollisions() {
         if (ball == null) return;
 
-        // Va chạm với tường
-        if (ball.getX() <= 0 || ball.getX() + ball.getWidth() >= SCREEN_WIDTH) {
+        // Va chạm với tường: bật lại, đẩy ra khỏi cạnh và đảm bảo có vận tốc ngang tối thiểu
+        if (ball.getX() <= 0) {
             ball.bounceX();
+            ball.resolveLeftWallCollision();
+        } else if (ball.getX() + ball.getWidth() >= SCREEN_WIDTH) {
+            ball.bounceX();
+            ball.resolveRightWallCollision(SCREEN_WIDTH);
         }
         if (ball.getY() <= 0) {
             ball.bounceY();
         }
         if (ball.getY() + ball.getHeight() >= SCREEN_HEIGHT) {
             handleLifeLost();
+            return; // prevent multiple decrements in the same frame
         }
 
         // Thanh đỡ
@@ -237,6 +317,10 @@ public class GameManager {
         handleBrickCollisions();
     }
 
+    /**
+     * Thêm một hàng gạch mới ở trên cùng cho chế độ vô tận, đồng thời đẩy các hàng hiện tại xuống dưới.
+     * Có logic chống lặp mẫu để tạo cảm giác đa dạng theo thời gian.
+     */
     private void addRowAtTop() {
         int topRowY = findTopRowY();
         int[] previousPattern = captureTopRowPattern(topRowY);
@@ -327,20 +411,30 @@ public class GameManager {
     }
 
     private Brick createBrickFromPattern(int type, int x, int y) {
-        return switch (type) {
-            case 1 -> new NormalBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
-            case 2 -> new StrongBrick(x, y, BRICK_WIDTH, BRICK_HEIGHT);
-            default -> null;
-        };
+        return BrickFactory.createFromPattern(type, x, y, BRICK_WIDTH, BRICK_HEIGHT);
     }
 
     private void handleLifeLost() {
+        if (isResetting || stateTransition.isActive()) {
+            return;
+        }
         lives--;
         if (lives <= 0) {
             triggerGameOver();
         } else {
-            resetBallAndPaddle();
+            // Start smooth reset transition instead of instant reset
+            isResetting = true;
+            resetTimer = 0.0;
         }
+    }
+
+    public boolean isResetting() {
+        return isResetting;
+    }
+
+    public double getResetProgress() {
+        if (!isResetting) return 0.0;
+        return Math.min(1.0, resetTimer / RESET_DURATION);
     }
 
     private void checkWinCondition() {
@@ -387,6 +481,72 @@ public class GameManager {
     public void saveHighScore() {
         String nameToSave = currentPlayerName.isEmpty() ? "Player" : currentPlayerName;
         HighScoreManager.getInstance().addScore(nameToSave, scoreToSave);
-        currentState = GameState.GAME_OVER;
+        startStateTransition(GameState.GAME_OVER);
+    }
+
+    public void addLife(int amount) {
+        lives += amount;
+    }
+
+    private void startStateTransition(GameState targetState) {
+        if (currentState == targetState) return;
+        stateTransition.start(currentState, targetState, STATE_TRANSITION_DURATION);
+    }
+
+    public boolean isTransitionActive() { return stateTransition.isActive(); }
+    public double getTransitionProgress() { return stateTransition.getProgress(); }
+    public GameState getTransitionFrom() { return stateTransition.getFromState(); }
+    public GameState getTransitionTo() { return stateTransition.getToState(); }
+
+    // Deprecated: game over handled by generic stateTransition
+
+    private void updatePowerUps(double deltaTime) {
+        for (PowerUp p : new ArrayList<>(powerUps)) {
+            p.update();
+            if (p.getY() > SCREEN_HEIGHT) {
+                powerUps.remove(p);
+                continue;
+            }
+            if (p.getBounds().intersects(paddle.getBounds())) {
+                p.apply(this);
+                powerUps.remove(p);
+            }
+        }
+    }
+
+    private void updateEffects(double deltaTime) {
+        if (paddleExpanded) {
+            expandTimer -= deltaTime;
+            if (expandTimer <= 0.0) {
+                clearExpandEffect();
+            }
+        }
+    }
+
+    private void clearExpandEffect() {
+        if (paddleExpanded && originalPaddleWidth > 0) {
+            int center = paddle.getX() + paddle.getWidth() / 2;
+            paddle.setWidth(originalPaddleWidth);
+            paddle.setX(center - paddle.getWidth() / 2);
+        }
+        paddleExpanded = false;
+        expandTimer = 0.0;
+        originalPaddleWidth = -1;
+    }
+
+    public void applyExpandPaddleEffect(Paddle pad, double scaleFactor, double durationSeconds) {
+        if (!paddleExpanded) {
+            originalPaddleWidth = pad.getWidth();
+            int newWidth = (int) Math.round(originalPaddleWidth * scaleFactor);
+            int center = pad.getX() + pad.getWidth() / 2;
+            pad.setWidth(newWidth);
+            pad.setX(center - pad.getWidth() / 2);
+            paddleExpanded = true;
+        }
+        expandTimer = durationSeconds;
+    }
+
+    public List<PowerUp> getPowerUps() {
+        return powerUps;
     }
 }
