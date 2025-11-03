@@ -54,6 +54,33 @@ public final class BrickFactory {
             default -> null;
         };
     }
+
+    /**
+     * Tạo gạch dựa trên mã kiểu nhưng có ngẫu nhiên hoá: một phần gạch thường sẽ là PowerUpBrick
+     * để phù hợp với hành vi khởi tạo ban đầu.
+     */
+    public static Brick createFromPatternRandomized(Random random,
+                                                   int type,
+                                                   int x,
+                                                   int y,
+                                                   int width,
+                                                   int height) {
+        switch (type) {
+            case 0:
+                return null;
+            case 1: {
+                // 25% cơ hội chuyển thành PowerUpBrick
+                if (random.nextInt(100) < 25) {
+                    return new PowerUpBrick(x, y, width, height);
+                }
+                return new NormalBrick(x, y, width, height);
+            }
+            case 2:
+                return new StrongBrick(x, y, width, height);
+            default:
+                return null;
+        }
+    }
 }
 
 

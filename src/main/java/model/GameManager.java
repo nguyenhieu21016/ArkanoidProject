@@ -1,10 +1,12 @@
 
 package model;
 
+import javafx.scene.paint.Color;
+import model.powerup.PowerUp;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import model.powerup.PowerUp;
 
 
 public class GameManager {
@@ -14,7 +16,7 @@ public class GameManager {
 
     public static final int SCREEN_WIDTH = 800;
     public static final int SCREEN_HEIGHT = 600;
-    
+
     // Game constants
     private static final int INITIAL_LIVES = 3;
     private static final int SCORE_PER_BRICK = 10;
@@ -22,25 +24,28 @@ public class GameManager {
     private static final int BRICK_WIDTH = 70;
     private static final int BRICK_HEIGHT = 30;
     private static final int BRICK_OFFSET_Y = 50;
-    
+
     // Paddle constants
     private static final int PADDLE_INIT_X = SCREEN_WIDTH / 2 - 50;
     private static final int PADDLE_INIT_Y = 550;
     private static final int PADDLE_WIDTH = 100;
     private static final int PADDLE_HEIGHT = 20;
     private static final int PADDLE_SPEED = 12;
-    
+
     // Ball constants
     private static final int BALL_SIZE = 20;
     private static final int BALL_OFFSET_FROM_PADDLE = 2;
-    
+
     // Endless mode constants
     private static final double SPAWN_INTERVAL_SECONDS = 16.0;
+    private static final double MIN_SPAWN_INTERVAL_SECONDS = 6.0; // floor so it doesn't get impossible
+    private static final double SPAWN_INTERVAL_DECAY_PER_SEC = 0.03; // seconds reduced per real second
     private static final double EMPTY_BRICK_CHANCE = 0.40;
     private static final double NORMAL_BRICK_CHANCE = 0.85;
     private static final int MAX_PATTERN_ATTEMPTS = 5;
 
     private Ball ball;
+    private final List<Ball> extraBalls = new ArrayList<>();
     private Paddle paddle;
     private List<Brick> bricks;
     private final List<FloatingText> floatingTexts = new ArrayList<>();
@@ -50,7 +55,8 @@ public class GameManager {
     private int lives;
     private GameState currentState;
     private final MenuState menuState = new MenuState();
-    
+    private final PauseMenuState pauseMenuState = new PauseMenuState();
+
     private String currentPlayerName = "";
     private int scoreToSave = 0;
 
@@ -68,6 +74,9 @@ public class GameManager {
     private double expandTimer = 0.0;
     private int originalPaddleWidth = -1;
 
+    // Score milestone highlight
+    private int nextScoreMilestone = 250;
+
     // Transitions
     private boolean isResetting = false;
     private double resetTimer = 0.0;
@@ -75,6 +84,9 @@ public class GameManager {
 
     private final StateTransition stateTransition = new StateTransition();
     private static final double STATE_TRANSITION_DURATION = 0.4;
+
+    // UI hover states
+    private boolean backHovered = false;
 
     // Private constructor cho Singleton; cờ nội bộ để phân biệt với truy cập từ bên ngoài
     private GameManager(boolean internal) {
@@ -106,6 +118,7 @@ public class GameManager {
         spawnTimer = 0.0;
         lastUpdateNano = System.nanoTime();
         powerUps.clear();
+        extraBalls.clear();
         clearExpandEffect();
     }
 
@@ -211,6 +224,10 @@ public class GameManager {
             }
             ball.update();
         }
+        // Update extra balls
+        for (Ball eb : new ArrayList<>(extraBalls)) {
+            eb.update();
+        }
 
         if (endlessMode) {
             updateEndlessMode(deltaTime);
@@ -231,6 +248,9 @@ public class GameManager {
     }
 
     private void updateEndlessMode(double deltaTime) {
+        // Gradually reduce spawn interval over time to increase difficulty
+        spawnInterval = Math.max(MIN_SPAWN_INTERVAL_SECONDS, spawnInterval - SPAWN_INTERVAL_DECAY_PER_SEC * deltaTime);
+
         spawnTimer += deltaTime;
         if (spawnTimer >= spawnInterval) {
             spawnTimer -= spawnInterval;
@@ -244,8 +264,8 @@ public class GameManager {
     }
 
     private void cleanupBricks() {
-        bricks.removeIf(b -> b.isDestroyed() || 
-            b.getY() > SCREEN_HEIGHT + BRICK_HEIGHT || 
+        bricks.removeIf(b -> b.isDestroyed() ||
+            b.getY() > SCREEN_HEIGHT + BRICK_HEIGHT ||
             b.getY() < -BRICK_HEIGHT);
     }
 
@@ -269,10 +289,12 @@ public class GameManager {
         for (Brick brick : new ArrayList<>(bricks)) {
             if (brick.isDestroyed()) continue;
             if (ball.handleCollisionWith(brick)) {
+                int oldScore = score;
                 score += SCORE_PER_BRICK;
                 // Sound removed
                 double textX = brick.getX() + brick.getWidth() / 2.0;
                 floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
+                checkScoreMilestone(oldScore, score);
                 if (brick.isDestroyed() && brick instanceof PowerUpBrick) {
                     PowerUp p = ((PowerUpBrick) brick).spawnPowerUp();
                     if (p != null) {
@@ -284,6 +306,28 @@ public class GameManager {
         }
     }
 
+    private void checkScoreMilestone(int oldScore, int newScore) {
+        while (newScore >= nextScoreMilestone) {
+            String label = formatScore(nextScoreMilestone) + "!";
+            double cx = SCREEN_WIDTH / 2.0 - 80;
+            double cy = SCREEN_HEIGHT / 2.0 - 40;
+            floatingTexts.add(new FloatingText(cx, cy, label, Color.BEIGE, 60, -0.6, 0.015));
+            nextScoreMilestone += 250;
+        }
+    }
+
+    private String formatScore(int value) {
+        String s = Integer.toString(value);
+        StringBuilder out = new StringBuilder();
+        int len = s.length();
+        for (int i = 0; i < len; i++) {
+            out.append(s.charAt(i));
+            int remaining = len - i - 1;
+            if (remaining > 0 && remaining % 3 == 0) out.append(',');
+        }
+        return out.toString();
+    }
+
     /**
      * Kiểm tra toàn bộ va chạm trong frame hiện tại:
      * - Bóng với tường, đáy màn hình (mất mạng)
@@ -291,30 +335,76 @@ public class GameManager {
      * - Bóng với gạch (cập nhật điểm, hiệu ứng chữ nổi)
      */
     private void checkCollisions() {
-        if (ball == null) return;
+        if (ball == null && extraBalls.isEmpty()) return;
 
-        // Va chạm với tường: bật lại, đẩy ra khỏi cạnh và đảm bảo có vận tốc ngang tối thiểu
-        if (ball.getX() <= 0) {
-            ball.bounceX();
-            ball.resolveLeftWallCollision();
-        } else if (ball.getX() + ball.getWidth() >= SCREEN_WIDTH) {
-            ball.bounceX();
-            ball.resolveRightWallCollision(SCREEN_WIDTH);
+        // Check for the primary ball
+        if (ball != null) {
+            checkCollisionsFor(ball, true);
         }
-        if (ball.getY() <= 0) {
-            ball.bounceY();
+        // Check for extra balls
+        for (Ball eb : new ArrayList<>(extraBalls)) {
+            checkCollisionsFor(eb, false);
         }
-        if (ball.getY() + ball.getHeight() >= SCREEN_HEIGHT) {
+    }
+
+    private void checkCollisionsFor(Ball b, boolean isPrimary) {
+        // Walls
+        if (b.getX() <= 0) {
+            b.bounceX();
+            b.resolveLeftWallCollision();
+        } else if (b.getX() + b.getWidth() >= SCREEN_WIDTH) {
+            b.bounceX();
+            b.resolveRightWallCollision(SCREEN_WIDTH);
+        }
+        if (b.getY() <= 0) {
+            b.bounceY();
+        }
+        if (b.getY() + b.getHeight() >= SCREEN_HEIGHT) {
+            handleBallOutOfBounds(b, isPrimary);
+            return;
+        }
+
+        // Paddle
+        if (b.getBounds().intersects(paddle.getBounds())) {
+            b.calculateBounceFromPaddle(paddle);
+        }
+
+        // Bricks
+        for (Brick brick : new ArrayList<>(bricks)) {
+            if (brick.isDestroyed()) continue;
+            if (b.handleCollisionWith(brick)) {
+                int oldScore = score;
+                score += SCORE_PER_BRICK;
+                double textX = brick.getX() + brick.getWidth() / 2.0;
+                floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
+                checkScoreMilestone(oldScore, score);
+                if (brick.isDestroyed() && brick instanceof PowerUpBrick) {
+                    PowerUp p = ((PowerUpBrick) brick).spawnPowerUp();
+                    if (p != null) {
+                        powerUps.add(p);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private void handleBallOutOfBounds(Ball b, boolean isPrimary) {
+        int total = (ball != null ? 1 : 0) + extraBalls.size();
+        if (total > 1) {
+            if (isPrimary) {
+                // Promote one extra to primary
+                if (!extraBalls.isEmpty()) {
+                    ball = extraBalls.remove(0);
+                } else {
+                    ball = null;
+                }
+            } else {
+                extraBalls.remove(b);
+            }
+        } else {
             handleLifeLost();
-            return; // prevent multiple decrements in the same frame
         }
-
-        // Thanh đỡ
-        if (ball.getBounds().intersects(paddle.getBounds())) {
-            ball.calculateBounceFromPaddle(paddle);
-        }
-
-        handleBrickCollisions();
     }
 
     /**
@@ -324,12 +414,12 @@ public class GameManager {
     private void addRowAtTop() {
         int topRowY = findTopRowY();
         int[] previousPattern = captureTopRowPattern(topRowY);
-        
+
         shiftBricksDown();
-        
+
         int[] newPattern = generateNewRowPattern(previousPattern);
         spawnNewRow(topRowY, newPattern);
-        
+
         spawnTimer = 0.0;
     }
 
@@ -411,7 +501,8 @@ public class GameManager {
     }
 
     private Brick createBrickFromPattern(int type, int x, int y) {
-        return BrickFactory.createFromPattern(type, x, y, BRICK_WIDTH, BRICK_HEIGHT);
+        // Randomize normal bricks into power-up bricks at similar rate as initial generation
+        return BrickFactory.createFromPatternRandomized(random, type, x, y, BRICK_WIDTH, BRICK_HEIGHT);
     }
 
     private void handleLifeLost() {
@@ -425,6 +516,7 @@ public class GameManager {
             // Start smooth reset transition instead of instant reset
             isResetting = true;
             resetTimer = 0.0;
+            extraBalls.clear();
         }
     }
 
@@ -458,12 +550,26 @@ public class GameManager {
         }
     }
 
+    public boolean isEndlessMode() { return endlessMode; }
+    public void toggleEndlessMode() { endlessMode = !endlessMode; }
+    public double getSpawnProgress() {
+        if (!endlessMode) return 0.0;
+        if (spawnInterval <= 0.0) return 1.0;
+        return Math.max(0.0, Math.min(1.0, spawnTimer / spawnInterval));
+    }
+
+    public double getSpawnTimeRemainingSeconds() {
+        if (!endlessMode) return -1.0;
+        return Math.max(0.0, spawnInterval - spawnTimer);
+    }
+
     public Ball getBall() { return ball; }
     public Paddle getPaddle() { return paddle; }
     public List<Brick> getBricks() { return bricks; }
     public int getScore() { return score; }
     public int getLives() { return lives; }
     public MenuState getMenuState() { return menuState; }
+    public PauseMenuState getPauseMenuState() { return pauseMenuState; }
     public List<FloatingText> getFloatingTexts() { return floatingTexts; }
 
     public String getCurrentPlayerName() {
@@ -497,6 +603,15 @@ public class GameManager {
     public double getTransitionProgress() { return stateTransition.getProgress(); }
     public GameState getTransitionFrom() { return stateTransition.getFromState(); }
     public GameState getTransitionTo() { return stateTransition.getToState(); }
+
+    // Back button hover state accessors
+    public boolean isBackHovered() {
+        return backHovered;
+    }
+
+    public void setBackHovered(boolean hovered) {
+        this.backHovered = hovered;
+    }
 
     // Deprecated: game over handled by generic stateTransition
 
@@ -548,5 +663,31 @@ public class GameManager {
 
     public List<PowerUp> getPowerUps() {
         return powerUps;
+    }
+
+    public List<Ball> getExtraBalls() {
+        return extraBalls;
+    }
+
+    public void spawnExtraBalls(int count) {
+        if (ball == null || !ball.isLaunched()) return;
+        // Spawn balls from the primary ball position with diverging velocities
+        int originX = ball.getX();
+        int originY = ball.getY();
+        int size = BALL_SIZE;
+        int[][] velocities = new int[][]{
+            { 4, -5 },
+            { -4, -5 },
+            { 5, -4 },
+            { -5, -4 }
+        };
+        int idx = 0;
+        for (int i = 0; i < count; i++) {
+            int[] v = velocities[idx % velocities.length];
+            Ball nb = new Ball(originX, originY, size, v[0], v[1]);
+            nb.setLaunched(true);
+            extraBalls.add(nb);
+            idx++;
+        }
     }
 }

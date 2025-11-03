@@ -41,6 +41,11 @@ public class AssetManager {
         loadImage("strong_brick_cracked", "/images/strong_brick_cracked.png");
         loadImage("powerup_brick", "/images/powerup_brick.png");
 
+        // Power-up sprites
+        loadImage("powerup_expand", "/images/expand_paddle_powerup.png");
+        loadImage("powerup_multi", "/images/multi_ball_powerup.png");
+        loadImage("powerup_extralife", "/images/extra_life_powerup.png");
+
     }
 
     /**

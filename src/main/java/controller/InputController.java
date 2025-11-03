@@ -21,6 +21,8 @@ public class InputController {
     public void listenTo(Scene scene) {
         scene.setOnKeyPressed(event -> handleKeyPressed(event.getCode()));
         scene.setOnKeyReleased(event -> handleKeyReleased(event.getCode()));
+        scene.setOnMouseMoved(event -> handleMouseMoved(event.getSceneX(), event.getSceneY()));
+        scene.setOnMouseClicked(event -> handleMouseClicked(event.getSceneX(), event.getSceneY()));
     }
 
     private void handleKeyPressed(KeyCode code) {
@@ -69,6 +71,101 @@ public class InputController {
         }
     }
 
+    private void handleMouseMoved(double x, double y) {
+        GameState state = gameManager.getCurrentState();
+        if (state == GameState.MENU) {
+            int index = hitTestMainMenu(x, y);
+            if (index >= 0) {
+                gameManager.getMenuState().setSelectedIndex(index);
+            }
+            gameManager.setBackHovered(false);
+        } else if (state == GameState.PAUSED) {
+            int index = hitTestPauseMenu(x, y);
+            if (index >= 0) {
+                gameManager.getPauseMenuState().setSelectedIndex(index);
+            }
+            gameManager.setBackHovered(hitTestBackButton(x, y));
+        } else if (state == GameState.HIGHSCORE || state == GameState.INSTRUCTION) {
+            gameManager.setBackHovered(hitTestBackButton(x, y));
+        } else {
+            gameManager.setBackHovered(false);
+        }
+    }
+
+    private void handleMouseClicked(double x, double y) {
+        GameState state = gameManager.getCurrentState();
+        if (state == GameState.MENU) {
+            int index = hitTestMainMenu(x, y);
+            if (index >= 0) {
+                gameManager.getMenuState().setSelectedIndex(index);
+                executeMenuAction(gameManager.getMenuState().confirm());
+            }
+        } else if (state == GameState.HIGHSCORE || state == GameState.INSTRUCTION) {
+            if (hitTestBackButton(x, y)) {
+                gameManager.setCurrentState(GameState.MENU);
+            }
+        } else if (state == GameState.PAUSED) {
+            if (hitTestBackButton(x, y)) {
+                gameManager.resumeGame();
+            } else {
+                int index = hitTestPauseMenu(x, y);
+                if (index >= 0) {
+                    gameManager.getPauseMenuState().setSelectedIndex(index);
+                    executePauseAction(gameManager.getPauseMenuState().confirm());
+                }
+            }
+        }
+    }
+
+    // Hit test main menu options based on render layout in GameMenu
+    private int hitTestMainMenu(double x, double y) {
+        // Rendered at x ~200, y = 250 + i*60, font size ~28
+        // Widen the horizontal and vertical hit area for better UX
+        double left = 100;
+        double right = 700;
+        double topStart = 230;
+        double rowHeight = 60;
+        double rowTextHeight = 50;
+        if (x < left || x > right) return -1;
+        int idx = (int) Math.floor((y - topStart) / rowHeight);
+        if (idx < 0) return -1;
+        // tighten vertical bounds per row
+        double rowTop = topStart + idx * rowHeight - rowTextHeight / 2.0;
+        double rowBottom = topStart + idx * rowHeight + rowTextHeight / 2.0;
+        if (y >= rowTop && y <= rowBottom && idx < gameManager.getMenuState().getOptions().length) {
+            return idx;
+        }
+        return -1;
+    }
+
+    private boolean hitTestBackButton(double x, double y) {
+        // Matches GameMenu back text at (40,60). Provide a generous clickable box.
+        double left = 20;
+        double top = 30;
+        double right = 140;
+        double bottom = 80;
+        return x >= left && x <= right && y >= top && y <= bottom;
+    }
+
+    private int hitTestPauseMenu(double x, double y) {
+        // Pause menu options drawn at x ~240, y = 240 + i*50, font size ~26
+        // Use generous bounds for better UX
+        double left = 100;
+        double right = 700;
+        double topStart = 230;
+        double rowHeight = 50;
+        double rowTextHeight = 50;
+        if (x < left || x > right) return -1;
+        int idx = (int) Math.floor((y - topStart) / rowHeight);
+        if (idx < 0) return -1;
+        double rowTop = topStart + idx * rowHeight - rowTextHeight / 2.0;
+        double rowBottom = topStart + idx * rowHeight + rowTextHeight / 2.0;
+        if (y >= rowTop && y <= rowBottom && idx < gameManager.getPauseMenuState().getOptions().length) {
+            return idx;
+        }
+        return -1;
+    }
+
     private void executeMenuAction(MenuState.Action action) {
         switch (action) {
             case START -> gameManager.startGame();
@@ -104,7 +201,21 @@ public class InputController {
     private void handlePausedInput(KeyCode code) {
         switch (code) {
             case P -> gameManager.resumeGame();
-            case R -> gameManager.startGame();
+            case UP -> gameManager.getPauseMenuState().moveUp();
+            case DOWN -> gameManager.getPauseMenuState().moveDown();
+            case ENTER -> executePauseAction(gameManager.getPauseMenuState().confirm());
+            case ESCAPE -> gameManager.resumeGame();
+            default -> {}
+        }
+    }
+
+    private void executePauseAction(model.PauseMenuState.Action action) {
+        switch (action) {
+            case RESUME -> gameManager.resumeGame();
+            case RESTART -> gameManager.startGame();
+            case MAIN_MENU -> gameManager.setCurrentState(GameState.MENU);
+            case EXIT -> System.exit(0);
+            case NONE -> {}
         }
     }
 

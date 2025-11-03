@@ -6,6 +6,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import model.GameManager;
 import model.MenuState;
+import model.PauseMenuState;
 import util.AssetManager;
 
 public class GameMenu {
@@ -16,7 +17,7 @@ public class GameMenu {
         renderBackgroundAndOverlay(gc);
 
         gc.setFill(Color.WHITE);
-        gc.setFont(new Font("m6x11", 36));
+        gc.setFont(new Font("m6x11", 50));
         gc.fillText("ArkanoidProject", 150, 150);
 
         String[] options = menuState.getOptions();
@@ -46,9 +47,12 @@ public class GameMenu {
             gc.fillText((i + 1) + ". " + entry.getName() + " - " + entry.getScore(), 220, 160 + i * 35);
         }
 
+        gc.setFont(new Font("m6x11", 22));
+        gc.setFill(GameManager.getInstance().isBackHovered() ? Color.web("#B8F4DC") : Color.GRAY);
+        gc.fillText("Back", 40, 60);
         gc.setFont(new Font("m6x11", 20));
         gc.setFill(Color.WHITE);
-        gc.fillText("Press ESC to return", 260, 500);
+        gc.fillText("Press ESC to return", 260, 550);
     }
 
     public void renderInstruction(GraphicsContext gc) {
@@ -67,9 +71,44 @@ public class GameMenu {
         gc.fillText("Break all bricks to win!", 180, y + 120);
         gc.fillText("Don't let the ball fall!", 180, y + 160);
 
+        gc.setFont(new Font("m6x11", 22));
+        gc.setFill(GameManager.getInstance().isBackHovered() ? Color.web("#B8F4DC") : Color.GRAY);
+        gc.fillText("Back", 40, 60);
         gc.setFont(new Font("m6x11", 20));
         gc.setFill(Color.WHITE);
-        gc.fillText("Press ESC to return", 260, 500);
+        gc.fillText("Press ESC to return", 260, 550);
+    }
+
+    public void renderPause(GraphicsContext gc, PauseMenuState pauseState) {
+        renderBackgroundAndOverlay(gc);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("m6x11", 36));
+        gc.fillText("PAUSED", 300, 150);
+
+        // Clickable BACK (resume)
+        gc.setFont(new Font("m6x11", 22));
+        gc.setFill(GameManager.getInstance().isBackHovered() ? Color.web("#B8F4DC") : Color.GRAY);
+        gc.fillText("BACK", 40, 60);
+
+        String[] options = pauseState.getOptions();
+        int selectedIndex = pauseState.getSelectedIndex();
+
+        gc.setFont(new Font("m6x11", 26));
+        for (int i = 0; i < options.length; i++) {
+            String label = options[i];
+            if (i == selectedIndex) {
+                gc.setFill(Color.web("#B8F4DC"));
+            } else {
+                gc.setFill(Color.GRAY);
+            }
+            gc.fillText(label, 240, 240 + i * 50);
+        }
+
+        gc.setFont(new Font("m6x11", 18));
+        gc.setFill(Color.WHITE);
+        gc.fillText("Use UP/DOWN to navigate, ENTER to confirm", 180, 520);
+        gc.fillText("Press P to resume", 300, 550);
     }
 
     private void renderBackgroundAndOverlay(GraphicsContext gc) {

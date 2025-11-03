@@ -1,10 +1,10 @@
 package model;
 
-public class MenuState {
+public class PauseMenuState {
     private int selectedIndex = 0;
-    private final String[] options = {"Start", "High Score", "Instruction", "Exit"};
+    private final String[] options = {"Resume", "Restart", "Main Menu", "Exit"};
 
-    public enum Action { NONE, START, HIGHSCORE, INSTRUCTION, EXIT }
+    public enum Action { NONE, RESUME, RESTART, MAIN_MENU, EXIT }
 
     public void moveUp() {
         selectedIndex = (selectedIndex - 1 + options.length) % options.length;
@@ -16,9 +16,9 @@ public class MenuState {
 
     public Action confirm() {
         return switch (selectedIndex) {
-            case 0 -> Action.START;
-            case 1 -> Action.HIGHSCORE;
-            case 2 -> Action.INSTRUCTION;
+            case 0 -> Action.RESUME;
+            case 1 -> Action.RESTART;
+            case 2 -> Action.MAIN_MENU;
             case 3 -> Action.EXIT;
             default -> Action.NONE;
         };
@@ -38,4 +38,5 @@ public class MenuState {
         }
     }
 }
+
 

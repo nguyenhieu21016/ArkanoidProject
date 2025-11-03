@@ -2,6 +2,7 @@ package view;
 
 import javafx.scene.text.Text;
 import model.*;
+import model.FloatingText;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -64,14 +65,7 @@ public class GameView {
                 break;
             case PAUSED:
                 renderGamePlay();
-                renderOverlay(PAUSED_OVERLAY_OPACITY);
-
-                gc.setFill(Color.WHITE);
-                gc.setFont(new Font("m6x11", 60));
-                drawTextCentered("PAUSED", -20);
-                gc.setFont(new Font("m6x11", 20));
-                drawTextCentered("Press P to Resume", 20);
-                drawTextCentered("Press R to Restart", 50);
+                gameMenu.renderPause(gc, gameManager.getPauseMenuState());
                 break;
             case NAME_INPUT:
                 renderGamePlay();
@@ -124,6 +118,9 @@ public class GameView {
 
         renderPaddle(paddle);
         renderBall(ball);
+        for (Ball eb : gameManager.getExtraBalls()) {
+            renderBall(eb);
+        }
 
         // Vẽ Bricks
         renderBricks(bricks);
@@ -200,21 +197,32 @@ public class GameView {
     }
 
     private void renderPowerUps(List<PowerUp> powerUps) {
+        Image expandSprite = AssetManager.getInstance().getImage("powerup_expand");
+        Image multiSprite = AssetManager.getInstance().getImage("powerup_multi");
+        Image extraLifeSprite = AssetManager.getInstance().getImage("powerup_extralife");
+
         gc.setStroke(Color.BLACK);
         for (PowerUp p : powerUps) {
-            PowerUpType type = p.getType();
-            Color color = (type == PowerUpType.EXPAND) ? Color.LIMEGREEN : Color.GOLD;
-            String label = (type == PowerUpType.EXPAND) ? "E" : "+1";
+            Image sprite = null;
+            if (p.getType() == PowerUpType.EXPAND) sprite = expandSprite;
+            else if (p.getType() == PowerUpType.MULTI) sprite = multiSprite;
+            else if (p.getType() == PowerUpType.EXTRA_LIFE) sprite = extraLifeSprite;
 
-            gc.setFill(color);
-            gc.fillOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
-            gc.strokeOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
-
-            gc.setFill(Color.BLACK);
-            gc.setFont(new Font("m6x11", 12));
-            double tx = p.getX() + p.getWidth() / 2.0 - (label.length() == 1 ? 4 : 8);
-            double ty = p.getY() + p.getHeight() / 2.0 + 4;
-            gc.fillText(label, tx, ty);
+            if (sprite != null) {
+                gc.drawImage(sprite, p.getX(), p.getY(), p.getWidth(), p.getHeight());
+            } else {
+                // Fallback: simple colored badge
+                Color color = (p.getType() == PowerUpType.EXPAND) ? Color.LIMEGREEN : (p.getType() == PowerUpType.MULTI ? Color.CYAN : Color.GOLD);
+                String label = (p.getType() == PowerUpType.EXPAND) ? "E" : (p.getType() == PowerUpType.MULTI ? "M" : "+1");
+                gc.setFill(color);
+                gc.fillOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
+                gc.strokeOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
+                gc.setFill(Color.BLACK);
+                gc.setFont(new Font("m6x11", 12));
+                double tx = p.getX() + p.getWidth() / 2.0 - (label.length() == 1 ? 4 : 8);
+                double ty = p.getY() + p.getHeight() / 2.0 + 4;
+                gc.fillText(label, tx, ty);
+            }
         }
     }
 
@@ -223,6 +231,21 @@ public class GameView {
         gc.setFont(new Font("m6x11", 20));
         gc.fillText("Score: " + gameManager.getScore(), 10, 25);
         gc.fillText("Lives: " + gameManager.getLives(), GameManager.SCREEN_WIDTH - 80, 25);
+
+        // Spawn countdown text (endless mode)
+        if (gameManager.isEndlessMode()) {
+            double remaining = gameManager.getSpawnTimeRemainingSeconds();
+            int secs = Math.max(0, (int) Math.ceil(remaining));
+            String text = String.format("NEXT ROW: %ds", secs);
+            gc.setFill(Color.WHITE);
+            gc.setFont(new Font("m6x11", 26));
+            Text t = new Text(text);
+            t.setFont(gc.getFont());
+            double textWidth = t.getLayoutBounds().getWidth();
+            double tx = (GameManager.SCREEN_WIDTH - textWidth) / 2.0;
+            double ty = 30;
+            gc.fillText(text, tx, ty);
+        }
     }
 
 
