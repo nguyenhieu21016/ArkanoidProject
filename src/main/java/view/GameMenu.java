@@ -48,7 +48,7 @@ public class GameMenu {
         }
 
         gc.setFont(new Font("m6x11", 22));
-        gc.setFill(GameManager.getInstance().isBackHovered() ? Color.web("#B8F4DC") : Color.GRAY);
+        gc.setFill(Color.GRAY);
         gc.fillText("Back", 40, 60);
         gc.setFont(new Font("m6x11", 20));
         gc.setFill(Color.WHITE);
@@ -72,7 +72,7 @@ public class GameMenu {
         gc.fillText("Don't let the ball fall!", 180, y + 160);
 
         gc.setFont(new Font("m6x11", 22));
-        gc.setFill(GameManager.getInstance().isBackHovered() ? Color.web("#B8F4DC") : Color.GRAY);
+        gc.setFill(Color.GRAY);
         gc.fillText("Back", 40, 60);
         gc.setFont(new Font("m6x11", 20));
         gc.setFill(Color.WHITE);
@@ -86,10 +86,10 @@ public class GameMenu {
         gc.setFont(new Font("m6x11", 36));
         gc.fillText("PAUSED", 300, 150);
 
-        // Clickable BACK (resume)
+        // BACK button
         gc.setFont(new Font("m6x11", 22));
-        gc.setFill(GameManager.getInstance().isBackHovered() ? Color.web("#B8F4DC") : Color.GRAY);
-        gc.fillText("BACK", 40, 60);
+        gc.setFill(Color.GRAY);
+        gc.fillText("Back", 40, 60);
 
         String[] options = pauseState.getOptions();
         int selectedIndex = pauseState.getSelectedIndex();
@@ -109,6 +109,57 @@ public class GameMenu {
         gc.setFill(Color.WHITE);
         gc.fillText("Use UP/DOWN to navigate, ENTER to confirm", 180, 520);
         gc.fillText("Press P to resume", 300, 550);
+    }
+
+    public void renderSettings(GraphicsContext gc, model.SettingsState settingsState) {
+        renderBackgroundAndOverlay(gc);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("m6x11", 40));
+        gc.fillText("SETTINGS", 280, 120);
+
+        // Back button
+        gc.setFont(new Font("m6x11", 22));
+        gc.setFill(Color.GRAY);
+        gc.fillText("Back", 40, 60);
+
+        String[] options = settingsState.getOptions();
+        int selectedIndex = settingsState.getSelectedIndex();
+
+        gc.setFont(new Font("m6x11", 26));
+        for (int i = 0; i < options.length; i++) {
+            String label = options[i];
+            boolean isSelected = (i == selectedIndex);
+
+            if (isSelected) {
+                gc.setFill(Color.web("#B8F4DC"));
+            } else {
+                gc.setFill(Color.GRAY);
+            }
+
+            // Hiển thị label
+            gc.fillText(label, 200, 220 + i * 60);
+
+            // Hiển thị volume values (chỉ text, không có progress bar)
+            if (i < 2) {
+                double volume = (i == 0) ? settingsState.getMasterVolume() : settingsState.getSfxVolume();
+                int volumePercent = (int) Math.round(volume * 100);
+
+                // Volume value
+                gc.setFill(Color.WHITE);
+                gc.setFont(new Font("m6x11", 22));
+                gc.fillText(volumePercent + "%", 500, 220 + i * 60);
+
+                // Reset font
+                gc.setFont(new Font("m6x11", 26));
+            }
+        }
+
+        // Instructions
+        gc.setFont(new Font("m6x11", 18));
+        gc.setFill(Color.WHITE);
+        gc.fillText("Use UP/DOWN to navigate, LEFT/RIGHT or A/D to adjust volume", 120, 520);
+        gc.fillText("Press ESC to return", 280, 550);
     }
 
     private void renderBackgroundAndOverlay(GraphicsContext gc) {

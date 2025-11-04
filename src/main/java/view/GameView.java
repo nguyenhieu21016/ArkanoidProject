@@ -37,7 +37,6 @@ public class GameView {
     }
 
     private static final double OVERLAY_OPACITY = 0.5;
-    private static final double PAUSED_OVERLAY_OPACITY = 0.6;
     private static final int CURSOR_BLINK_INTERVAL_MS = 500;
 
     public void startGameLoop() {
@@ -87,6 +86,9 @@ public class GameView {
                 break;
             case INSTRUCTION:
                 gameMenu.renderInstruction(gc);
+                break;
+            case SETTINGS:
+                gameMenu.renderSettings(gc, gameManager.getSettingsState());
                 break;
         }
 

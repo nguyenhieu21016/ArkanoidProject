@@ -54,8 +54,10 @@ public class GameManager {
     private int score;
     private int lives;
     private GameState currentState;
+    private GameState previousState; // Lưu state trước khi vào Settings
     private final MenuState menuState = new MenuState();
     private final PauseMenuState pauseMenuState = new PauseMenuState();
+    private final SettingsState settingsState = new SettingsState();
 
     private String currentPlayerName = "";
     private int scoreToSave = 0;
@@ -74,6 +76,10 @@ public class GameManager {
     private double expandTimer = 0.0;
     private int originalPaddleWidth = -1;
 
+    // Power-up effect: magnet (ball sticks to paddle until SPACE)
+    private boolean magnetActive = false;
+    private double magnetTimer = 0.0;
+
     // Score milestone highlight
     private int nextScoreMilestone = 250;
 
@@ -85,8 +91,6 @@ public class GameManager {
     private final StateTransition stateTransition = new StateTransition();
     private static final double STATE_TRANSITION_DURATION = 0.4;
 
-    // UI hover states
-    private boolean backHovered = false;
 
     // Private constructor cho Singleton; cờ nội bộ để phân biệt với truy cập từ bên ngoài
     private GameManager(boolean internal) {
@@ -127,7 +131,17 @@ public class GameManager {
     }
 
     public void setCurrentState(GameState state) {
+        // Lưu previous state khi vào Settings
+        if (state == GameState.SETTINGS && currentState != GameState.SETTINGS) {
+            this.previousState = currentState;
+            // Đồng bộ volume từ SoundManager
+            settingsState.setMasterVolume(util.SoundManager.getInstance().getMasterVolume());
+        }
         this.currentState = state;
+    }
+    
+    public GameState getPreviousState() {
+        return previousState;
     }
 
     public void startGame() {
@@ -285,26 +299,6 @@ public class GameManager {
         startStateTransition(GameState.NAME_INPUT);
     }
 
-    private void handleBrickCollisions() {
-        for (Brick brick : new ArrayList<>(bricks)) {
-            if (brick.isDestroyed()) continue;
-            if (ball.handleCollisionWith(brick)) {
-                int oldScore = score;
-                score += SCORE_PER_BRICK;
-                // Sound removed
-                double textX = brick.getX() + brick.getWidth() / 2.0;
-                floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
-                checkScoreMilestone(oldScore, score);
-                if (brick.isDestroyed() && brick instanceof PowerUpBrick) {
-                    PowerUp p = ((PowerUpBrick) brick).spawnPowerUp();
-                    if (p != null) {
-                        powerUps.add(p);
-                    }
-                }
-                break;
-            }
-        }
-    }
 
     private void checkScoreMilestone(int oldScore, int newScore) {
         while (newScore >= nextScoreMilestone) {
@@ -366,7 +360,13 @@ public class GameManager {
 
         // Paddle
         if (b.getBounds().intersects(paddle.getBounds())) {
-            b.calculateBounceFromPaddle(paddle);
+            if (isPrimary && magnetActive) {
+                // Stick the main ball to paddle; wait for SPACE to launch
+                b.setLaunched(false);
+                attachBallToPaddle();
+            } else {
+                b.calculateBounceFromPaddle(paddle);
+            }
         }
 
         // Bricks
@@ -375,6 +375,8 @@ public class GameManager {
             if (b.handleCollisionWith(brick)) {
                 int oldScore = score;
                 score += SCORE_PER_BRICK;
+                // Phát âm thanh khi gạch bị vỡ
+                util.SoundManager.getInstance().playSound("brick_hit");
                 double textX = brick.getX() + brick.getWidth() / 2.0;
                 floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
                 checkScoreMilestone(oldScore, score);
@@ -570,6 +572,7 @@ public class GameManager {
     public int getLives() { return lives; }
     public MenuState getMenuState() { return menuState; }
     public PauseMenuState getPauseMenuState() { return pauseMenuState; }
+    public SettingsState getSettingsState() { return settingsState; }
     public List<FloatingText> getFloatingTexts() { return floatingTexts; }
 
     public String getCurrentPlayerName() {
@@ -604,17 +607,6 @@ public class GameManager {
     public GameState getTransitionFrom() { return stateTransition.getFromState(); }
     public GameState getTransitionTo() { return stateTransition.getToState(); }
 
-    // Back button hover state accessors
-    public boolean isBackHovered() {
-        return backHovered;
-    }
-
-    public void setBackHovered(boolean hovered) {
-        this.backHovered = hovered;
-    }
-
-    // Deprecated: game over handled by generic stateTransition
-
     private void updatePowerUps(double deltaTime) {
         for (PowerUp p : new ArrayList<>(powerUps)) {
             p.update();
@@ -634,6 +626,12 @@ public class GameManager {
             expandTimer -= deltaTime;
             if (expandTimer <= 0.0) {
                 clearExpandEffect();
+            }
+        }
+        if (magnetActive) {
+            magnetTimer -= deltaTime;
+            if (magnetTimer <= 0.0) {
+                magnetActive = false;
             }
         }
     }
@@ -659,6 +657,15 @@ public class GameManager {
             paddleExpanded = true;
         }
         expandTimer = durationSeconds;
+    }
+
+    public void activateMagnet(double durationSeconds) {
+        magnetActive = true;
+        magnetTimer = Math.max(magnetTimer, durationSeconds);
+    }
+
+    public boolean isMagnetActive() {
+        return magnetActive;
     }
 
     public List<PowerUp> getPowerUps() {

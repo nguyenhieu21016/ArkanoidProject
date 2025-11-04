@@ -30,6 +30,12 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
         <!-- JUnit 5 cho Unit Test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -76,9 +82,12 @@
                     <options>
                         <option>-Djava.awt.headless=true</option>
                         <option>-Dprism.order=sw</option>
-
                         <option>--add-modules</option>
-                        <option>javafx.controls,javafx.fxml</option>
+                        <option>javafx.controls,javafx.fxml,javafx.media</option>
+                        <option>--add-exports</option>
+                        <option>javafx.base/com.sun.javafx=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>javafx.base/com.sun.javafx=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>

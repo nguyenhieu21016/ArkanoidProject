@@ -8,5 +8,6 @@ public enum GameState {
     GAME_OVER,
     INSTRUCTION,
     GAME_WON,
-    NAME_INPUT
+    NAME_INPUT,
+    SETTINGS
 }
