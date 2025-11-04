@@ -16,16 +16,22 @@ public class Ball extends MovableObject {
         super(x, y, size, size, dx, dy);
     }
 
+    /**
+     * Đảo hướng theo trục Y (bật lên/xuống).
+     */
     public void bounceY() {
         dy = -dy;
     }
 
+    /**
+     * Đảo hướng theo trục X (bật trái/phải).
+     */
     public void bounceX() {
         dx = -dx;
     }
 
     /**
-     * Đảm bảo sau khi va vào tường trái, bóng được đẩy ra khỏi tường và có vận tốc ngang tối thiểu.
+     * Xử lý va tường trái: đẩy ra và đặt vận tốc ngang tối thiểu.
      */
     public void resolveLeftWallCollision() {
         setX(0);
@@ -35,7 +41,7 @@ public class Ball extends MovableObject {
     }
 
     /**
-     * Đảm bảo sau khi va vào tường phải, bóng được đẩy ra khỏi tường và có vận tốc ngang tối thiểu.
+     * Xử lý va tường phải.
      * @param screenWidth độ rộng màn hình
      */
     public void resolveRightWallCollision(int screenWidth) {
@@ -45,6 +51,10 @@ public class Ball extends MovableObject {
         }
     }
 
+    /**
+     * Tính vận tốc bật lại khi chạm paddle dựa vào vị trí chạm.
+     * @param paddle paddle
+     */
     public void calculateBounceFromPaddle(Paddle paddle) {
         setY(paddle.getY() - getHeight() - 1);
 
@@ -75,6 +85,11 @@ public class Ball extends MovableObject {
 
     
 
+    /**
+     * Xử lý va chạm với gạch, cập nhật vị trí/vận tốc và trừ HP gạch.
+     * @param brick gạch
+     * @return true nếu có va chạm
+     */
     public boolean handleCollisionWith(Brick brick) {
         if (!this.getBounds().intersects(brick.getBounds())) {
             return false;
@@ -117,18 +132,32 @@ public class Ball extends MovableObject {
     }
 
     @Override
+    /**
+     * Cập nhật vị trí theo vận tốc (1 bước).
+     */
     public void update() {
         this.move();
     }
 
+    /**
+     * Bóng đã được phóng chưa.
+     */
     public boolean isLaunched() {
         return launched;
     }
 
+    /**
+     * Đặt trạng thái đã phóng.
+     */
     public void setLaunched(boolean launched) {
         this.launched = launched;
     }
 
+    /**
+     * Phóng bóng với vận tốc cho trước.
+     * @param dx vận tốc x
+     * @param dy vận tốc y
+     */
     public void launch(int dx, int dy) {
         this.dx = dx;
         this.dy = dy;

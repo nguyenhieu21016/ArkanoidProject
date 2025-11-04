@@ -4,12 +4,14 @@ public abstract class MovableObject extends GameObject {
     protected int dx;
     protected int dy;
 
-    public MovableObject(int x, int y, int height, int width, int dx, int dy) {
-        super(x, y, height, width);
+    // Ctor: pos + size + vel
+    public MovableObject(int x, int y, int width, int height, int dx, int dy) {
+        super(x, y, width, height);
         this.dx = dx;
         this.dy = dy;
     }
 
+    // step
     public void move() {
         setX(getX() + dx);
         setY(getY() + dy);

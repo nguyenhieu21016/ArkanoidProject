@@ -29,6 +29,10 @@ public class GameView {
     private final GraphicsContext gc;
     private final GameMenu gameMenu = new GameMenu();
 
+    /**
+     * Constructor tạo GameView.
+     * @param gameManager quản lý game
+     */
     public GameView(GameManager gameManager) {
         this.gameManager = gameManager;
         this.canvas = new Canvas(GameManager.SCREEN_WIDTH, GameManager.SCREEN_HEIGHT);
@@ -36,6 +40,10 @@ public class GameView {
         this.root = new Pane(canvas);
     }
 
+    /**
+     * Lấy node gốc để gắn vào Scene.
+     * @return Pane root
+     */
     public Pane getRoot() {
         return root;
     }
@@ -43,6 +51,9 @@ public class GameView {
     private static final double OVERLAY_OPACITY = 0.5;
     private static final int CURSOR_BLINK_INTERVAL_MS = 500;
 
+    /**
+     * Bắt đầu vòng lặp render/update chính.
+     */
     public void startGameLoop() {
         new AnimationTimer() {
             @Override
@@ -206,6 +217,7 @@ public class GameView {
         Image expandSprite = AssetManager.getInstance().getImage("powerup_expand");
         Image multiSprite = AssetManager.getInstance().getImage("powerup_multi");
         Image extraLifeSprite = AssetManager.getInstance().getImage("powerup_extralife");
+        Image magnetSprite = AssetManager.getInstance().getImage("powerup_magnet");
 
         gc.setStroke(Color.BLACK);
         for (PowerUp p : powerUps) {
@@ -213,13 +225,18 @@ public class GameView {
             if (p.getType() == PowerUpType.EXPAND) sprite = expandSprite;
             else if (p.getType() == PowerUpType.MULTI) sprite = multiSprite;
             else if (p.getType() == PowerUpType.EXTRA_LIFE) sprite = extraLifeSprite;
+            else if (p.getType() == PowerUpType.MAGNET) sprite = magnetSprite;
 
             if (sprite != null) {
                 gc.drawImage(sprite, p.getX(), p.getY(), p.getWidth(), p.getHeight());
             } else {
                 // Fallback: simple colored badge
-                Color color = (p.getType() == PowerUpType.EXPAND) ? Color.LIMEGREEN : (p.getType() == PowerUpType.MULTI ? Color.CYAN : Color.GOLD);
-                String label = (p.getType() == PowerUpType.EXPAND) ? "E" : (p.getType() == PowerUpType.MULTI ? "M" : "+1");
+                Color color;
+                String label;
+                if (p.getType() == PowerUpType.EXPAND) { color = Color.LIMEGREEN; label = "E"; }
+                else if (p.getType() == PowerUpType.MULTI) { color = Color.CYAN; label = "M"; }
+                else if (p.getType() == PowerUpType.EXTRA_LIFE) { color = Color.GOLD; label = "+1"; }
+                else { color = Color.MEDIUMPURPLE; label = "G"; } // MAGNET fallback
                 gc.setFill(color);
                 gc.fillOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
                 gc.strokeOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
@@ -241,15 +258,16 @@ public class GameView {
         // Hiển thị combo
         int combo = gameManager.getComboCount();
         if (combo >= 2) {
-            gc.setFont(new Font("m6x11", 24));
-            gc.setFill(Color.web("#FFD700")); // Gold color for combo
+            gc.setFont(new Font("m6x11", 32));
+            gc.setFill(Color.color(0.82, 0.83, 0.71, 0.7)); // Beige color with reduced opacity
             String comboText = combo + "x COMBO!";
-            javafx.scene.text.Text textNode = new javafx.scene.text.Text(comboText);
-            textNode.setFont(gc.getFont());
-            double textWidth = textNode.getLayoutBounds().getWidth();
-            double comboX = (GameManager.SCREEN_WIDTH - textWidth) / 2.0;
-            gc.fillText(comboText, comboX, 50);
+            double comboX = 30; // Bottom left corner, shifted right
+            double comboY = GameManager.SCREEN_HEIGHT - 20; // Bottom of screen
+            gc.fillText(comboText, comboX, comboY);
         }
+
+        // Power-up HUD: show active power-ups with their remaining time and sprite
+        renderPowerUpHUD();
 
         // Spawn countdown text (endless mode)
         if (gameManager.isEndlessMode()) {
@@ -264,6 +282,54 @@ public class GameView {
             double tx = (GameManager.SCREEN_WIDTH - textWidth) / 2.0;
             double ty = 30;
             gc.fillText(text, tx, ty);
+        }
+    }
+
+    private void renderPowerUpHUD() {
+        // Position near bottom-right, slightly above the combo area, stack upward
+        double currentY = GameManager.SCREEN_HEIGHT - 60;
+        double iconSize = 20;
+        double spacing = 8;
+        double margin = 20; // shift HUD a bit to the left
+        double iconX = GameManager.SCREEN_WIDTH - margin - iconSize;
+        gc.setFont(new Font("m6x11", 20));
+
+        // Expand paddle HUD
+        if (gameManager.isPaddleExpanded() && gameManager.getExpandTimeRemaining() > 0.0) {
+            Image expandSprite = AssetManager.getInstance().getImage("powerup_expand");
+            if (expandSprite != null) {
+                gc.drawImage(expandSprite, iconX, currentY - iconSize, iconSize, iconSize);
+            }
+            int secs = Math.max(0, (int) Math.ceil(gameManager.getExpandTimeRemaining()));
+            String t = secs + "s";
+            Text textNode = new Text(t);
+            textNode.setFont(gc.getFont());
+            double textWidth = textNode.getLayoutBounds().getWidth();
+            double textX = iconX - 6 - textWidth;
+            double textY = currentY - iconSize + 16; // align baseline with icon
+            gc.setFill(Color.WHITE);
+            gc.fillText(t, textX, textY);
+            // stack next item upward
+            currentY -= (iconSize + spacing);
+        }
+
+        // Magnet HUD
+        if (gameManager.isMagnetActive() && gameManager.getMagnetTimeRemaining() > 0.0) {
+            Image magnetSprite = AssetManager.getInstance().getImage("powerup_magnet");
+            if (magnetSprite != null) {
+                gc.drawImage(magnetSprite, iconX, currentY - iconSize, iconSize, iconSize);
+            }
+            int secs = Math.max(0, (int) Math.ceil(gameManager.getMagnetTimeRemaining()));
+            String t = secs + "s";
+            Text textNode = new Text(t);
+            textNode.setFont(gc.getFont());
+            double textWidth = textNode.getLayoutBounds().getWidth();
+            double textX = iconX - 6 - textWidth;
+            double textY = currentY - iconSize + 16; // align baseline with icon
+            gc.setFill(Color.WHITE);
+            gc.fillText(t, textX, textY);
+            // stack next item upward
+            currentY -= (iconSize + spacing);
         }
     }
 

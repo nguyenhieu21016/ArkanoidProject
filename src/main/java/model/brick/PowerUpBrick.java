@@ -7,10 +7,21 @@ import model.powerup.MultiBallPowerUp;
 import model.powerup.MagnetPowerUp;
 
 public class PowerUpBrick extends Brick {
+    /**
+     * Constructor để khởi tạo PowerUpBrick.
+     * @param x x
+     * @param y y
+     * @param width chiều rộng
+     * @param height chiều cao
+     */
     public PowerUpBrick(int x, int y, int width, int height) {
         super(x, y, width, height, 1);
     }
 
+    /**
+     * Sinh power-up tương ứng khi gạch bị phá.
+     * @return đối tượng PowerUp rơi xuống
+     */
     public PowerUp spawnPowerUp() {
         int centerX = getX() + getWidth() / 2 - 10;
         int y = getY() + getHeight();

@@ -20,6 +20,10 @@ public class InputController {
         this.gameManager = gameManager;
     }
 
+    /**
+     * Đăng ký lắng nghe phím cho Scene.
+     * @param scene Scene cần gắn
+     */
     public void listenTo(Scene scene) {
         scene.setOnKeyPressed(event -> handleKeyPressed(event.getCode()));
         scene.setOnKeyReleased(event -> handleKeyReleased(event.getCode()));
@@ -101,8 +105,13 @@ public class InputController {
 
     private void launchBall() {
         if (!gameManager.getBall().isLaunched()) {
-            int dx = Math.random() < 0.5 ? -BALL_LAUNCH_SPEED_X : BALL_LAUNCH_SPEED_X;
-            gameManager.getBall().launch(dx, -BALL_LAUNCH_SPEED_Y);
+            // If the ball is attached due to magnet, launch straight up
+            if (gameManager.isMagnetActive()) {
+                gameManager.getBall().launch(0, -BALL_LAUNCH_SPEED_Y);
+            } else {
+                int dx = Math.random() < 0.5 ? -BALL_LAUNCH_SPEED_X : BALL_LAUNCH_SPEED_X;
+                gameManager.getBall().launch(dx, -BALL_LAUNCH_SPEED_Y);
+            }
         }
     }
 

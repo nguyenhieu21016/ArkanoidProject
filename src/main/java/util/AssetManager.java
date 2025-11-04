@@ -45,6 +45,8 @@ public class AssetManager {
         loadImage("powerup_expand", "/images/expand_paddle_powerup.png");
         loadImage("powerup_multi", "/images/multi_ball_powerup.png");
         loadImage("powerup_extralife", "/images/extra_life_powerup.png");
+        // Magnet power-up (ensure the file exists at this path)
+        loadImage("powerup_magnet", "/images/magnet_powerup.png");
 
     }
 

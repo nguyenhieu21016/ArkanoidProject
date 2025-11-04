@@ -92,6 +92,7 @@ public class GameManager {
     // Power-up effect: magnet (ball sticks to paddle until SPACE)
     private boolean magnetActive = false;
     private double magnetTimer = 0.0;
+    private double ballPaddleOffset = 0.0; // Offset of ball center from paddle center when attached
 
     // Score milestone highlight
     private int nextScoreMilestone = 250;
@@ -245,7 +246,7 @@ public class GameManager {
             // Allow paddle to move during reset and keep ball attached
             paddle.update(SCREEN_WIDTH);
             if (ball != null && !ball.isLaunched()) {
-                attachBallToPaddle();
+                updateBallAttachedPosition();
             }
             return;
         }
@@ -255,9 +256,12 @@ public class GameManager {
         paddle.update(SCREEN_WIDTH);
         if (ball != null) {
             if (!ball.isLaunched()) {
-                attachBallToPaddle();
+                // Ball is attached to paddle, update position relative to paddle
+                updateBallAttachedPosition();
+            } else {
+                // Ball is moving, update normally
+                ball.update();
             }
-            ball.update();
         }
         // Update extra balls
         for (Ball eb : new ArrayList<>(extraBalls)) {
@@ -279,7 +283,39 @@ public class GameManager {
     }
 
     private void attachBallToPaddle() {
-        ball.setX(paddle.getX() + paddle.getWidth() / 2 - ball.getWidth() / 2);
+        // Attach to center by default
+        attachBallToPaddleAt(paddle.getX() + paddle.getWidth() / 2.0);
+    }
+
+    private void attachBallToPaddleAt(double paddleX) {
+        // Calculate and store offset from paddle center
+        double paddleCenterX = paddle.getX() + paddle.getWidth() / 2.0;
+        ballPaddleOffset = paddleX - paddleCenterX;
+        
+        // Clamp offset to keep ball within paddle bounds
+        double maxOffset = paddle.getWidth() / 2.0 - ball.getWidth() / 2.0;
+        ballPaddleOffset = Math.max(-maxOffset, Math.min(maxOffset, ballPaddleOffset));
+        
+        // Set ball position
+        updateBallAttachedPosition();
+    }
+    
+    private void updateBallAttachedPosition() {
+        if (ball == null || ball.isLaunched()) return;
+        
+        // Ensure ball velocity is zero
+        ball.setDx(0);
+        ball.setDy(0);
+        
+        double paddleCenterX = paddle.getX() + paddle.getWidth() / 2.0;
+        double ballX = paddleCenterX + ballPaddleOffset - ball.getWidth() / 2.0;
+        
+        // Clamp ball position to keep it within paddle bounds
+        double minX = paddle.getX();
+        double maxX = paddle.getX() + paddle.getWidth() - ball.getWidth();
+        ballX = Math.max(minX, Math.min(maxX, ballX));
+        
+        ball.setX((int) ballX);
         ball.setY(paddle.getY() - ball.getHeight() - BALL_OFFSET_FROM_PADDLE);
     }
 
@@ -394,10 +430,20 @@ public class GameManager {
         // Paddle
         if (b.getBounds().intersects(paddle.getBounds())) {
             if (isPrimary && magnetActive) {
-                // Stick the main ball to paddle; wait for SPACE to launch
+                // Stick the main ball to paddle at the CENTER; wait for SPACE to launch
+                // Stop ball movement immediately
+                b.setDx(0);
+                b.setDy(0);
                 b.setLaunched(false);
-                attachBallToPaddle();
+                // Attach to paddle center
+                double paddleCenterX = paddle.getX() + paddle.getWidth() / 2.0;
+                attachBallToPaddleAt(paddleCenterX);
             } else {
+                if (!isPrimary && magnetActive) {
+                    // Show "!extra" text when extra ball hits paddle during magnet
+                    double textX = b.getX() + b.getWidth() / 2.0;
+                    floatingTexts.add(new FloatingText(textX, paddle.getY() - 20, "!extra", Color.web("#ffcdcd"), 24, -0.8, 0.015));
+                }
                 b.calculateBounceFromPaddle(paddle);
             }
         }
@@ -424,7 +470,7 @@ public class GameManager {
                 // Hiển thị điểm và combo
                 double textX = brick.getX() + brick.getWidth() / 2.0;
                 if (comboCount >= COMBO_MULTIPLIER_START) {
-                    floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + actualScore + " (x" + comboCount + ")", Color.web("#FFD700"), 28, -0.8, 0.015));
+                    floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + actualScore + " (x" + comboCount + ")", Color.color(0.82, 0.83, 0.71, 0.9), 28, -0.8, 0.015));
                 } else {
                     floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + actualScore));
                 }
@@ -717,6 +763,19 @@ public class GameManager {
 
     public boolean isMagnetActive() {
         return magnetActive;
+    }
+
+    // HUD helpers for power-up timers
+    public boolean isPaddleExpanded() {
+        return paddleExpanded;
+    }
+
+    public double getExpandTimeRemaining() {
+        return Math.max(0.0, expandTimer);
+    }
+
+    public double getMagnetTimeRemaining() {
+        return magnetActive ? Math.max(0.0, magnetTimer) : 0.0;
     }
 
     public List<PowerUp> getPowerUps() {
