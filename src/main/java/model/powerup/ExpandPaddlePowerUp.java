@@ -1,7 +1,7 @@
 package model.powerup;
 
-import model.GameManager;
-import model.Paddle;
+import model.manager.GameManager;
+import model.entity.Paddle;
 
 public class ExpandPaddlePowerUp extends PowerUp {
     private final double durationSeconds;

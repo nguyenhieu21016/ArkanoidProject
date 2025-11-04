@@ -1,5 +1,7 @@
-package model;
+package model.entity;
 
+import model.brick.Brick;
+import model.entity.Paddle;
 import java.awt.Rectangle;
 
 public class Ball extends MovableObject {
@@ -26,7 +28,7 @@ public class Ball extends MovableObject {
      * Đảm bảo sau khi va vào tường trái, bóng được đẩy ra khỏi tường và có vận tốc ngang tối thiểu.
      */
     public void resolveLeftWallCollision() {
-        this.x = 0;
+        setX(0);
         if (dx <= 0) {
             dx = Math.max(MIN_HORIZONTAL_SPEED, 3);
         }
@@ -37,16 +39,16 @@ public class Ball extends MovableObject {
      * @param screenWidth độ rộng màn hình
      */
     public void resolveRightWallCollision(int screenWidth) {
-        this.x = screenWidth - this.width;
+            setX(screenWidth - getWidth());
         if (dx >= 0) {
             dx = -Math.max(MIN_HORIZONTAL_SPEED, 3);
         }
     }
 
     public void calculateBounceFromPaddle(Paddle paddle) {
-        this.y = paddle.getY() - this.height - 1;
+        setY(paddle.getY() - getHeight() - 1);
 
-        double ballCenterX = this.x + this.width / 2.0;
+        double ballCenterX = getX() + getWidth() / 2.0;
         double paddleLeft = paddle.getX();
         
         double hitPosition = (ballCenterX - paddleLeft) / paddle.getWidth();
@@ -62,7 +64,7 @@ public class Ball extends MovableObject {
             bounceAngle = -bounceAngle;
         }
 
-        double currentSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+        double currentSpeed = Math.sqrt(dx * dx + dy * dy);
 
         double newDx = currentSpeed * Math.sin(bounceAngle);
         double newDy = -currentSpeed * Math.cos(bounceAngle);
@@ -99,18 +101,18 @@ public class Ball extends MovableObject {
     private void handleHorizontalCollision(Brick brick, Rectangle ballBounds, Rectangle brickBounds) {
         this.bounceX();
         if (ballBounds.getCenterX() < brickBounds.getCenterX()) {
-            this.x = brick.getX() - this.width - COLLISION_OFFSET;
+            setX(brick.getX() - getWidth() - COLLISION_OFFSET);
         } else {
-            this.x = brick.getX() + brick.getWidth() + COLLISION_OFFSET;
+            setX(brick.getX() + brick.getWidth() + COLLISION_OFFSET);
         }
     }
 
     private void handleVerticalCollision(Brick brick, Rectangle ballBounds, Rectangle brickBounds) {
         this.bounceY();
         if (ballBounds.getCenterY() < brickBounds.getCenterY()) {
-            this.y = brick.getY() - this.height - COLLISION_OFFSET;
+            setY(brick.getY() - getHeight() - COLLISION_OFFSET);
         } else {
-            this.y = brick.getY() + brick.getHeight() + COLLISION_OFFSET;
+            setY(brick.getY() + brick.getHeight() + COLLISION_OFFSET);
         }
     }
 

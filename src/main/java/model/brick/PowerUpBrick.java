@@ -1,4 +1,4 @@
-package model;
+package model.brick;
 
 import model.powerup.ExpandPaddlePowerUp;
 import model.powerup.PowerUp;
@@ -12,8 +12,8 @@ public class PowerUpBrick extends Brick {
     }
 
     public PowerUp spawnPowerUp() {
-        int centerX = this.x + this.width / 2 - 10;
-        int y = this.y + this.height;
+        int centerX = getX() + getWidth() / 2 - 10;
+        int y = getY() + getHeight();
         double r = Math.random();
         if (r < 0.40) {
             return new ExpandPaddlePowerUp(centerX, y);

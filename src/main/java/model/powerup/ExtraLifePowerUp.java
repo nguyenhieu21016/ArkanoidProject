@@ -1,6 +1,6 @@
 package model.powerup;
 
-import model.GameManager;
+import model.manager.GameManager;
 
 public class ExtraLifePowerUp extends PowerUp {
     private final int livesToAdd;

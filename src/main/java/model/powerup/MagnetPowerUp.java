@@ -1,6 +1,6 @@
 package model.powerup;
 
-import model.GameManager;
+import model.manager.GameManager;
 
 public class MagnetPowerUp extends PowerUp {
     private final double durationSeconds;

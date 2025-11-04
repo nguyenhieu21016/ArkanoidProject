@@ -1,4 +1,4 @@
-package model;
+package model.brick;
 
 public class StrongBrick extends Brick {
     private static final int INITIAL_HIT_POINTS = 2;

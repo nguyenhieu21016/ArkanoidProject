@@ -1,4 +1,4 @@
-package model;
+package model.entity;
 
 public class Paddle extends MovableObject {
     private int moveSpeed;
@@ -19,11 +19,11 @@ public class Paddle extends MovableObject {
     }
 
     private void moveLeft() {
-        x -= moveSpeed;
+        setX(getX() - moveSpeed);
     }
 
     private void moveRight() {
-        x += moveSpeed;
+        setX(getX() + moveSpeed);
     }
 
     /**
@@ -37,11 +37,11 @@ public class Paddle extends MovableObject {
         if (movingLeft) {
             moveLeft();
         }
-        if (x < 0) {
-            x = 0;
+        if (getX() < 0) {
+            setX(0);
         }
-        if (x + width > screenWidth) {
-            x = screenWidth - width;
+        if (getX() + getWidth() > screenWidth) {
+            setX(screenWidth - getWidth());
         }
     }
 

@@ -1,4 +1,4 @@
-package model;
+package model.state;
 
 /**
  * SettingsState - Quản lý state của menu Settings

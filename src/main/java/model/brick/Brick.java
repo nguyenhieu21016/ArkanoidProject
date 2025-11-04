@@ -1,4 +1,6 @@
-package model;
+package model.brick;
+
+import model.entity.GameObject;
 
 public abstract class Brick extends GameObject {
     protected int hitPoints;

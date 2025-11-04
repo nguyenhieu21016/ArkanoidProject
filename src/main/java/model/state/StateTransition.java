@@ -1,4 +1,4 @@
-package model;
+package model.state;
 
 public class StateTransition {
 

@@ -4,9 +4,11 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import model.GameManager;
-import model.MenuState;
-import model.PauseMenuState;
+import model.manager.GameManager;
+import model.manager.HighScoreManager;
+import model.state.MenuState;
+import model.state.PauseMenuState;
+import model.state.SettingsState;
 import util.AssetManager;
 
 public class GameMenu {
@@ -40,7 +42,7 @@ public class GameMenu {
         gc.setFont(new Font("m6x11", 32));
         gc.fillText("HIGH SCORES", 250, 100);
 
-        var scores = model.HighScoreManager.getInstance().getScores();
+        var scores = HighScoreManager.getInstance().getScores();
         gc.setFont(new Font("m6x11", 24));
         for (int i = 0; i < scores.size(); i++) {
             var entry = scores.get(i);
@@ -111,7 +113,7 @@ public class GameMenu {
         gc.fillText("Press P to resume", 300, 550);
     }
 
-    public void renderSettings(GraphicsContext gc, model.SettingsState settingsState) {
+    public void renderSettings(GraphicsContext gc, SettingsState settingsState) {
         renderBackgroundAndOverlay(gc);
 
         gc.setFill(Color.WHITE);

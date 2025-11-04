@@ -2,9 +2,11 @@ package controller;
 
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
-import model.GameManager;
-import model.GameState;
-import model.MenuState;
+import model.manager.GameManager;
+import model.state.GameState;
+import model.state.MenuState;
+import model.state.PauseMenuState;
+import model.state.SettingsState;
 
 public class InputController {
 
@@ -115,7 +117,7 @@ public class InputController {
         }
     }
 
-    private void executePauseAction(model.PauseMenuState.Action action) {
+    private void executePauseAction(PauseMenuState.Action action) {
         switch (action) {
             case RESUME -> gameManager.resumeGame();
             case RESTART -> gameManager.startGame();
@@ -133,7 +135,7 @@ public class InputController {
     }
 
     private void handleSettingsInput(KeyCode code) {
-        model.SettingsState settingsState = gameManager.getSettingsState();
+        SettingsState settingsState = gameManager.getSettingsState();
         switch (code) {
             case UP -> settingsState.moveUp();
             case DOWN -> settingsState.moveDown();
@@ -146,8 +148,8 @@ public class InputController {
                 applyVolumeSettings();
             }
             case ENTER -> {
-                model.SettingsState.Action action = settingsState.confirm();
-                if (action == model.SettingsState.Action.BACK) {
+                SettingsState.Action action = settingsState.confirm();
+                if (action == SettingsState.Action.BACK) {
                     returnToPreviousState();
                 }
             }
@@ -156,7 +158,7 @@ public class InputController {
     }
 
     private void applyVolumeSettings() {
-        model.SettingsState settingsState = gameManager.getSettingsState();
+        SettingsState settingsState = gameManager.getSettingsState();
         util.SoundManager.getInstance().setMasterVolume(settingsState.getMasterVolume());
         // SFX volume có thể được áp dụng riêng nếu cần
     }

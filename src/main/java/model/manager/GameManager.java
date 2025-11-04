@@ -1,8 +1,21 @@
 
-package model;
+package model.manager;
 
 import javafx.scene.paint.Color;
 import model.powerup.PowerUp;
+import model.entity.Ball;
+import model.entity.Paddle;
+import model.brick.Brick;
+import model.brick.PowerUpBrick;
+import model.brick.StrongBrick;
+import model.brick.BrickFactory;
+import model.state.GameState;
+import model.state.MenuState;
+import model.state.PauseMenuState;
+import model.state.SettingsState;
+import model.state.StateTransition;
+import model.ui.FloatingText;
+import util.SoundManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +96,12 @@ public class GameManager {
     // Score milestone highlight
     private int nextScoreMilestone = 250;
 
+    // Combo system
+    private int comboCount = 0;
+    private double comboTimer = 0.0;
+    private static final double COMBO_TIMEOUT = 2.0; // seconds before combo resets
+    private static final int COMBO_MULTIPLIER_START = 2; // Start bonus at 2x combo
+
     // Transitions
     private boolean isResetting = false;
     private double resetTimer = 0.0;
@@ -124,6 +143,8 @@ public class GameManager {
         powerUps.clear();
         extraBalls.clear();
         clearExpandEffect();
+        comboCount = 0;
+        comboTimer = 0.0;
     }
 
     public GameState getCurrentState() {
@@ -135,7 +156,7 @@ public class GameManager {
         if (state == GameState.SETTINGS && currentState != GameState.SETTINGS) {
             this.previousState = currentState;
             // Đồng bộ volume từ SoundManager
-            settingsState.setMasterVolume(util.SoundManager.getInstance().getMasterVolume());
+            settingsState.setMasterVolume(SoundManager.getInstance().getMasterVolume());
         }
         this.currentState = state;
     }
@@ -250,6 +271,7 @@ public class GameManager {
         checkCollisions();
         updatePowerUps(deltaTime);
         updateEffects(deltaTime);
+        updateCombo(deltaTime);
         updateFloatingTexts();
         cleanupBricks();
         checkBricksReachedPaddle();
@@ -269,6 +291,17 @@ public class GameManager {
         if (spawnTimer >= spawnInterval) {
             spawnTimer -= spawnInterval;
             addRowAtTop();
+        }
+    }
+
+    private void updateCombo(double deltaTime) {
+        if (comboCount > 0) {
+            comboTimer -= deltaTime;
+            if (comboTimer <= 0.0) {
+                // Combo timeout - reset combo
+                comboCount = 0;
+                comboTimer = 0.0;
+            }
         }
     }
 
@@ -374,11 +407,28 @@ public class GameManager {
             if (brick.isDestroyed()) continue;
             if (b.handleCollisionWith(brick)) {
                 int oldScore = score;
-                score += SCORE_PER_BRICK;
+                
+                // Tăng combo và reset timer
+                comboCount++;
+                comboTimer = COMBO_TIMEOUT;
+                
+                // Tính điểm với combo multiplier
+                int baseScore = SCORE_PER_BRICK;
+                int comboMultiplier = (comboCount >= COMBO_MULTIPLIER_START) ? comboCount : 1;
+                int actualScore = baseScore * comboMultiplier;
+                score += actualScore;
+                
                 // Phát âm thanh khi gạch bị vỡ
-                util.SoundManager.getInstance().playSound("brick_hit");
+                SoundManager.getInstance().playSound("brick_hit");
+                
+                // Hiển thị điểm và combo
                 double textX = brick.getX() + brick.getWidth() / 2.0;
-                floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + SCORE_PER_BRICK));
+                if (comboCount >= COMBO_MULTIPLIER_START) {
+                    floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + actualScore + " (x" + comboCount + ")", Color.web("#FFD700"), 28, -0.8, 0.015));
+                } else {
+                    floatingTexts.add(new FloatingText(textX, brick.getY(), "+" + actualScore));
+                }
+                
                 checkScoreMilestone(oldScore, score);
                 if (brick.isDestroyed() && brick instanceof PowerUpBrick) {
                     PowerUp p = ((PowerUpBrick) brick).spawnPowerUp();
@@ -570,6 +620,7 @@ public class GameManager {
     public List<Brick> getBricks() { return bricks; }
     public int getScore() { return score; }
     public int getLives() { return lives; }
+    public int getComboCount() { return comboCount; }
     public MenuState getMenuState() { return menuState; }
     public PauseMenuState getPauseMenuState() { return pauseMenuState; }
     public SettingsState getSettingsState() { return settingsState; }

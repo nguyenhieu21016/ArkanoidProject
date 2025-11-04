@@ -1,7 +1,7 @@
 package model.powerup;
 
-import model.GameManager;
-import model.GameObject;
+import model.manager.GameManager;
+import model.entity.GameObject;
 
 public abstract class PowerUp extends GameObject {
     protected int fallSpeed;
@@ -14,7 +14,7 @@ public abstract class PowerUp extends GameObject {
 
     @Override
     public void update() {
-        this.y += fallSpeed;
+        setY(getY() + fallSpeed);
     }
 
     public boolean isConsumed() {

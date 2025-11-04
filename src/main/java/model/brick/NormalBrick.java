@@ -1,4 +1,4 @@
-package model;
+package model.brick;
 
 public class NormalBrick extends Brick {
     private static final int N_INITIAL_HITS = 1;

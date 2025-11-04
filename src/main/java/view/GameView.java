@@ -1,8 +1,6 @@
 package view;
 
 import javafx.scene.text.Text;
-import model.*;
-import model.FloatingText;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -11,11 +9,17 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.image.Image;
 import util.AssetManager;
-
-import java.util.List;
+import model.manager.GameManager;
+import model.entity.Ball;
+import model.entity.Paddle;
+import model.brick.Brick;
+import model.brick.PowerUpBrick;
+import model.brick.StrongBrick;
+import model.ui.FloatingText;
 import model.powerup.PowerUp;
 import model.powerup.PowerUpType;
-import model.PowerUpBrick;
+
+import java.util.List;
 
 public class GameView {
 
@@ -233,6 +237,19 @@ public class GameView {
         gc.setFont(new Font("m6x11", 20));
         gc.fillText("Score: " + gameManager.getScore(), 10, 25);
         gc.fillText("Lives: " + gameManager.getLives(), GameManager.SCREEN_WIDTH - 80, 25);
+        
+        // Hiển thị combo
+        int combo = gameManager.getComboCount();
+        if (combo >= 2) {
+            gc.setFont(new Font("m6x11", 24));
+            gc.setFill(Color.web("#FFD700")); // Gold color for combo
+            String comboText = combo + "x COMBO!";
+            javafx.scene.text.Text textNode = new javafx.scene.text.Text(comboText);
+            textNode.setFont(gc.getFont());
+            double textWidth = textNode.getLayoutBounds().getWidth();
+            double comboX = (GameManager.SCREEN_WIDTH - textWidth) / 2.0;
+            gc.fillText(comboText, comboX, 50);
+        }
 
         // Spawn countdown text (endless mode)
         if (gameManager.isEndlessMode()) {

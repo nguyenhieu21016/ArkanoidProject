@@ -1,6 +1,6 @@
 package core;
 
-import model.GameManager;
+import model.manager.GameManager;
 import util.AssetManager;
 import view.GameView;
 import controller.InputController;
