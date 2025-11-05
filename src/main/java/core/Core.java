@@ -35,6 +35,7 @@ public class Core extends Application {
         Platform.runLater(() -> {
             try {
                 util.SoundManager.getInstance().loadSounds();
+                model.manager.GameManager.getInstance().onAudioReady();
             } catch (Exception e) {
                 System.err.println("Không thể tải âm thanh (có thể thiếu VM options): " + e.getMessage());
                 System.err.println("Hãy thêm các VM options sau vào Run Configuration:");

@@ -14,16 +14,21 @@ import java.util.Map;
  */
 public class SoundManager {
 
-    // Singleton instance
+    // Singleton duy nhất
     private static SoundManager instance;
 
-    // Map để lưu trữ các Media đã được tải
+    private static final String[] SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".m4a"};
+    private static final String[] COMMON_SOUND_HINTS = {"brickHit", "paddleHit", "powerUp", "optionChange", "selected", "mainMenuBGM", "inGameBGM", "gameOverBGM", "brick_hit"};
+
+    // Map lưu các Media (âm thanh) đã tải
     private final Map<String, Media> sounds = new HashMap<>();
+    private final Map<String, String> aliasMap = new HashMap<>();
 
-    // Volume mặc định (0.0 - 1.0)
+    // Âm lượng mặc định (0.0 - 1.0)
     private double masterVolume = 0.7;
+    private double sfxVolume = 0.7;
 
-    // Constructor private để ngăn việc tạo instance từ bên ngoài
+    // Constructor private để ngăn tạo instance từ bên ngoài
     private SoundManager() {}
 
     /**
@@ -44,22 +49,26 @@ public class SoundManager {
      */
     public void loadSounds() {
         try {
-            // Lấy URL của thư mục sounds
+            // Lấy URL thư mục sounds
             URL soundsDir = getClass().getResource("/sounds/");
             if (soundsDir == null) {
                 System.err.println("Không tìm thấy thư mục /sounds/ trong resources");
                 return;
             }
 
-            // Nếu là file: protocol (khi chạy từ IDE)
+            // Nếu là giao thức file: (chạy từ IDE)
             if (soundsDir.getProtocol().equals("file")) {
                 File dir = new File(soundsDir.toURI());
                 if (dir.exists() && dir.isDirectory()) {
-                    File[] files = dir.listFiles((d, name) -> 
-                        name.toLowerCase().endsWith(".mp3") || 
-                        name.toLowerCase().endsWith(".wav") ||
-                        name.toLowerCase().endsWith(".m4a")
-                    );
+                    File[] files = dir.listFiles((d, name) -> {
+                        String lower = name.toLowerCase();
+                        for (String ext : SUPPORTED_EXTENSIONS) {
+                            if (lower.endsWith(ext)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
                     if (files != null) {
                         for (File file : files) {
                             String fileName = file.getName();
@@ -69,15 +78,12 @@ public class SoundManager {
                     }
                 }
             } else {
-                // Nếu là jar: protocol (khi chạy từ JAR)
+                // Nếu là giao thức jar: (chạy từ JAR)
                 // Thử tải các file âm thanh phổ biến
-                // Bạn có thể thêm file mới vào đây hoặc gọi loadSound() trực tiếp
-                String[] commonSounds = {"brick_hit"};
-                String[] extensions = {".mp3", ".wav", ".m4a"};
-                
-                for (String soundName : commonSounds) {
+                // Có thể thêm file mới tại đây hoặc gọi loadSound() trực tiếp
+                for (String soundName : COMMON_SOUND_HINTS) {
                     boolean loaded = false;
-                    for (String ext : extensions) {
+                    for (String ext : SUPPORTED_EXTENSIONS) {
                         if (getClass().getResource("/sounds/" + soundName + ext) != null) {
                             loadSound(soundName, "/sounds/" + soundName + ext);
                             loaded = true;
@@ -109,6 +115,7 @@ public class SoundManager {
             }
             Media media = new Media(soundUrl.toString());
             sounds.put(soundName, media);
+            aliasMap.put(normalizeKey(soundName), soundName);
         } catch (IllegalAccessError e) {
             System.err.println("Lỗi module access khi tải âm thanh " + path);
             System.err.println("Hãy thêm các VM options sau vào Run Configuration:");
@@ -128,7 +135,8 @@ public class SoundManager {
      * @param soundName Tên định danh của âm thanh (không có extension)
      */
     public void playSound(String soundName) {
-        playSound(soundName, masterVolume);
+        double resolvedVolume = clampVolume(masterVolume * sfxVolume);
+        playSoundInternal(soundName, resolvedVolume);
     }
 
     /**
@@ -137,20 +145,26 @@ public class SoundManager {
      * @param volume Volume (0.0 - 1.0)
      */
     public void playSound(String soundName, double volume) {
-        Media media = sounds.get(soundName);
+        double resolvedVolume = clampVolume(masterVolume * sfxVolume * volume);
+        playSoundInternal(soundName, resolvedVolume);
+    }
+
+    private void playSoundInternal(String soundName, double volume) {
+        String key = resolveSoundName(soundName);
+        if (key == null) {
+            System.err.println("Âm thanh không tồn tại: " + soundName);
+            return;
+        }
+
+        Media media = sounds.get(key);
         if (media == null) {
-            // Thử tải tự động nếu chưa được tải
-            loadSound(soundName, "/sounds/" + soundName + ".mp3");
-            media = sounds.get(soundName);
-            if (media == null) {
-                System.err.println("Âm thanh không tồn tại: " + soundName);
-                return;
-            }
+            System.err.println("Âm thanh không tồn tại: " + soundName);
+            return;
         }
 
         try {
             MediaPlayer mediaPlayer = new MediaPlayer(media);
-            mediaPlayer.setVolume(Math.max(0.0, Math.min(1.0, volume)));
+            mediaPlayer.setVolume(clampVolume(volume));
             mediaPlayer.play();
         } catch (Exception e) {
             System.err.println("Lỗi khi phát âm thanh " + soundName + ": " + e.getMessage());
@@ -173,14 +187,16 @@ public class SoundManager {
      * @return MediaPlayer để có thể dừng sau này
      */
     public MediaPlayer playSoundLooping(String soundName, double volume) {
-        Media media = sounds.get(soundName);
+        String key = resolveSoundName(soundName);
+        if (key == null) {
+            System.err.println("Âm thanh không tồn tại: " + soundName);
+            return null;
+        }
+
+        Media media = sounds.get(key);
         if (media == null) {
-            loadSound(soundName, "/sounds/" + soundName + ".mp3");
-            media = sounds.get(soundName);
-            if (media == null) {
-                System.err.println("Âm thanh không tồn tại: " + soundName);
-                return null;
-            }
+            System.err.println("Âm thanh không tồn tại: " + soundName);
+            return null;
         }
 
         try {
@@ -192,6 +208,16 @@ public class SoundManager {
         } catch (Exception e) {
             System.err.println("Lỗi khi phát âm thanh lặp " + soundName + ": " + e.getMessage());
             return null;
+        }
+    }
+
+    public void stopLoop(MediaPlayer player) {
+        if (player == null) return;
+        try {
+            player.stop();
+            player.dispose();
+        } catch (Exception e) {
+            System.err.println("Không thể dừng âm thanh: " + e.getMessage());
         }
     }
 
@@ -211,6 +237,14 @@ public class SoundManager {
         return masterVolume;
     }
 
+    public void setSfxVolume(double volume) {
+        this.sfxVolume = Math.max(0.0, Math.min(1.0, volume));
+    }
+
+    public double getSfxVolume() {
+        return sfxVolume;
+    }
+
     /**
      * Kiểm tra xem một âm thanh đã được tải chưa
      * @param soundName Tên định danh của âm thanh
@@ -218,6 +252,61 @@ public class SoundManager {
      */
     public boolean isSoundLoaded(String soundName) {
         return sounds.containsKey(soundName);
+    }
+
+    private String resolveSoundName(String requested) {
+        if (requested == null || requested.isEmpty()) {
+            return null;
+        }
+
+        if (sounds.containsKey(requested)) {
+            return requested;
+        }
+
+        String normalized = normalizeKey(requested);
+        String alias = aliasMap.get(normalized);
+        if (alias != null && sounds.containsKey(alias)) {
+            return alias;
+        }
+
+        if (attemptAutoLoad(requested) && sounds.containsKey(requested)) {
+            return requested;
+        }
+
+        if (alias != null && attemptAutoLoad(alias) && sounds.containsKey(alias)) {
+            return alias;
+        }
+
+        for (String hint : COMMON_SOUND_HINTS) {
+            if (normalizeKey(hint).equals(normalized) && attemptAutoLoad(hint) && sounds.containsKey(hint)) {
+                return hint;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean attemptAutoLoad(String soundName) {
+        if (soundName == null || soundName.isEmpty() || sounds.containsKey(soundName)) {
+            return sounds.containsKey(soundName);
+        }
+
+        for (String ext : SUPPORTED_EXTENSIONS) {
+            String path = "/sounds/" + soundName + ext;
+            if (getClass().getResource(path) != null) {
+                loadSound(soundName, path);
+                return sounds.containsKey(soundName);
+            }
+        }
+        return false;
+    }
+
+    private String normalizeKey(String name) {
+        return name.replaceAll("[^A-Za-z0-9]", "").toLowerCase();
+    }
+
+    private double clampVolume(double volume) {
+        return Math.max(0.0, Math.min(1.0, volume));
     }
 }
 

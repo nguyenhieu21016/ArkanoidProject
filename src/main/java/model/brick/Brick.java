@@ -32,10 +32,6 @@ public abstract class Brick extends GameObject {
         }
     }
 
-    /**
-     * Kiểm tra xem Brick đã bị phá hủy chưa.
-     * @return kết quả check
-     */
     public boolean isDestroyed() {
         return destroyed;
     }

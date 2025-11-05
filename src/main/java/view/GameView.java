@@ -139,7 +139,7 @@ public class GameView {
             renderBall(eb);
         }
 
-        // Vẽ Bricks
+        // Vẽ bricks
         renderBricks(bricks);
         renderPowerUps(powerUps);
         renderFloatingTexts();
@@ -200,7 +200,7 @@ public class GameView {
                     return crackedSprite;
                 }
             } catch (NoSuchMethodError | AbstractMethodError e) {
-                // Fallback to strong sprite
+                // Fallback: dùng sprite gạch mạnh
             }
             return strongSprite;
         }
@@ -230,13 +230,13 @@ public class GameView {
             if (sprite != null) {
                 gc.drawImage(sprite, p.getX(), p.getY(), p.getWidth(), p.getHeight());
             } else {
-                // Fallback: simple colored badge
+                // Fallback: vẽ badge màu đơn giản khi thiếu sprite
                 Color color;
                 String label;
                 if (p.getType() == PowerUpType.EXPAND) { color = Color.LIMEGREEN; label = "E"; }
                 else if (p.getType() == PowerUpType.MULTI) { color = Color.CYAN; label = "M"; }
                 else if (p.getType() == PowerUpType.EXTRA_LIFE) { color = Color.GOLD; label = "+1"; }
-                else { color = Color.MEDIUMPURPLE; label = "G"; } // MAGNET fallback
+                else { color = Color.MEDIUMPURPLE; label = "G"; } // Fallback icon Magnet
                 gc.setFill(color);
                 gc.fillOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
                 gc.strokeOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
@@ -255,21 +255,21 @@ public class GameView {
         gc.fillText("Score: " + gameManager.getScore(), 10, 25);
         gc.fillText("Lives: " + gameManager.getLives(), GameManager.SCREEN_WIDTH - 80, 25);
         
-        // Hiển thị combo
+        // Hiển thị combo HUD
         int combo = gameManager.getComboCount();
         if (combo >= 2) {
             gc.setFont(new Font("m6x11", 32));
-            gc.setFill(Color.color(0.82, 0.83, 0.71, 0.7)); // Beige color with reduced opacity
+            gc.setFill(Color.color(0.82, 0.83, 0.71, 0.7)); // Beige với opacity thấp
             String comboText = combo + "x COMBO!";
-            double comboX = 30; // Bottom left corner, shifted right
+            double comboX = 30; // Bottom-left, lệch sang phải
             double comboY = GameManager.SCREEN_HEIGHT - 20; // Bottom of screen
             gc.fillText(comboText, comboX, comboY);
         }
 
-        // Power-up HUD: show active power-ups with their remaining time and sprite
+        // HUD power-up: hiển thị power-up đang active, thời gian còn lại và icon sprite
         renderPowerUpHUD();
 
-        // Spawn countdown text (endless mode)
+        // Countdown spawn hàng mới ở endless mode
         if (gameManager.isEndlessMode()) {
             double remaining = gameManager.getSpawnTimeRemainingSeconds();
             int secs = Math.max(0, (int) Math.ceil(remaining));
@@ -286,15 +286,15 @@ public class GameView {
     }
 
     private void renderPowerUpHUD() {
-        // Position near bottom-right, slightly above the combo area, stack upward
+        // Vị trí gần bottom-right, trên khu vực combo, xếp dọc
         double currentY = GameManager.SCREEN_HEIGHT - 60;
         double iconSize = 20;
         double spacing = 8;
-        double margin = 20; // shift HUD a bit to the left
+        double margin = 20; // shift HUD vào trái một chút
         double iconX = GameManager.SCREEN_WIDTH - margin - iconSize;
         gc.setFont(new Font("m6x11", 20));
 
-        // Expand paddle HUD
+        // HUD: Expand paddle
         if (gameManager.isPaddleExpanded() && gameManager.getExpandTimeRemaining() > 0.0) {
             Image expandSprite = AssetManager.getInstance().getImage("powerup_expand");
             if (expandSprite != null) {
@@ -306,14 +306,14 @@ public class GameView {
             textNode.setFont(gc.getFont());
             double textWidth = textNode.getLayoutBounds().getWidth();
             double textX = iconX - 6 - textWidth;
-            double textY = currentY - iconSize + 16; // align baseline with icon
+            double textY = currentY - iconSize + 16; // align baseline với icon
             gc.setFill(Color.WHITE);
             gc.fillText(t, textX, textY);
-            // stack next item upward
+            // stack mục tiếp theo lên trên
             currentY -= (iconSize + spacing);
         }
 
-        // Magnet HUD
+        // HUD: Magnet
         if (gameManager.isMagnetActive() && gameManager.getMagnetTimeRemaining() > 0.0) {
             Image magnetSprite = AssetManager.getInstance().getImage("powerup_magnet");
             if (magnetSprite != null) {
@@ -325,10 +325,10 @@ public class GameView {
             textNode.setFont(gc.getFont());
             double textWidth = textNode.getLayoutBounds().getWidth();
             double textX = iconX - 6 - textWidth;
-            double textY = currentY - iconSize + 16; // align baseline with icon
+            double textY = currentY - iconSize + 16; // align baseline với icon
             gc.setFill(Color.WHITE);
             gc.fillText(t, textX, textY);
-            // stack next item upward
+            // stack mục tiếp theo lên trên
             currentY -= (iconSize + spacing);
         }
     }

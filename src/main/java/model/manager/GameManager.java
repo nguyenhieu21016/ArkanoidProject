@@ -1,6 +1,7 @@
 
 package model.manager;
 
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import model.powerup.PowerUp;
 import model.entity.Ball;
@@ -24,13 +25,13 @@ import java.util.Random;
 
 public class GameManager {
 
-    // Singleton instance
+    // Singleton duy nhất
     private static final GameManager INSTANCE = new GameManager(true);
 
     public static final int SCREEN_WIDTH = 800;
     public static final int SCREEN_HEIGHT = 600;
 
-    // Game constants
+    // Hằng số gameplay
     private static final int INITIAL_LIVES = 3;
     private static final int SCORE_PER_BRICK = 10;
     private static final int INITIAL_BRICK_ROWS = 6;
@@ -38,21 +39,21 @@ public class GameManager {
     private static final int BRICK_HEIGHT = 30;
     private static final int BRICK_OFFSET_Y = 50;
 
-    // Paddle constants
+    // Hằng số paddle
     private static final int PADDLE_INIT_X = SCREEN_WIDTH / 2 - 50;
     private static final int PADDLE_INIT_Y = 550;
     private static final int PADDLE_WIDTH = 100;
     private static final int PADDLE_HEIGHT = 20;
     private static final int PADDLE_SPEED = 12;
 
-    // Ball constants
+    // Hằng số bóng
     private static final int BALL_SIZE = 20;
     private static final int BALL_OFFSET_FROM_PADDLE = 2;
 
-    // Endless mode constants
+    // Hằng số cho chế độ endless mode
     private static final double SPAWN_INTERVAL_SECONDS = 16.0;
-    private static final double MIN_SPAWN_INTERVAL_SECONDS = 6.0; // floor so it doesn't get impossible
-    private static final double SPAWN_INTERVAL_DECAY_PER_SEC = 0.03; // seconds reduced per real second
+    private static final double MIN_SPAWN_INTERVAL_SECONDS = 6.0; // floor để game không quá khó
+    private static final double SPAWN_INTERVAL_DECAY_PER_SEC = 0.03; // giảm dần theo thời gian thực
     private static final double EMPTY_BRICK_CHANCE = 0.40;
     private static final double NORMAL_BRICK_CHANCE = 0.85;
     private static final int MAX_PATTERN_ATTEMPTS = 5;
@@ -84,32 +85,36 @@ public class GameManager {
     private int offsetX;
     private double lastUpdateNano = System.nanoTime();
 
-    // Power-up effect: expand paddle
+    // Hiệu ứng power-up mở rộng paddle (expand)
     private boolean paddleExpanded = false;
     private double expandTimer = 0.0;
     private int originalPaddleWidth = -1;
 
-    // Power-up effect: magnet (ball sticks to paddle until SPACE)
+    // Hiệu ứng power-up magnet khiến bóng dính vào paddle tới khi bấm SPACE
     private boolean magnetActive = false;
     private double magnetTimer = 0.0;
-    private double ballPaddleOffset = 0.0; // Offset of ball center from paddle center when attached
+    private double ballPaddleOffset = 0.0; // độ lệch tâm bóng so với tâm paddle khi đang dính
 
-    // Score milestone highlight
+    // Hiển thị mốc điểm (score milestone)
     private int nextScoreMilestone = 250;
 
-    // Combo system
+    // Hệ thống combo
     private int comboCount = 0;
     private double comboTimer = 0.0;
-    private static final double COMBO_TIMEOUT = 2.0; // seconds before combo resets
-    private static final int COMBO_MULTIPLIER_START = 2; // Start bonus at 2x combo
+    private static final double COMBO_TIMEOUT = 2.0; // thời gian chờ trước khi reset combo
+    private static final int COMBO_MULTIPLIER_START = 2; // nhân điểm bắt đầu từ x2
 
-    // Transitions
+    // Chuyển cảnh (transitions)
     private boolean isResetting = false;
     private double resetTimer = 0.0;
     private static final double RESET_DURATION = 0.3;
 
     private final StateTransition stateTransition = new StateTransition();
     private static final double STATE_TRANSITION_DURATION = 0.4;
+
+    private MediaPlayer menuMusicPlayer;
+    private MediaPlayer gameMusicPlayer;
+    private MediaPlayer gameOverMusicPlayer;
 
 
     // Private constructor cho Singleton; cờ nội bộ để phân biệt với truy cập từ bên ngoài
@@ -135,10 +140,10 @@ public class GameManager {
         paddle = new Paddle(PADDLE_INIT_X, PADDLE_INIT_Y, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_SPEED);
         resetBallAndPaddle();
 
-        // Khởi tạo gạch
+        // Tạo bricks ban đầu
         loadLevel();
 
-        // Đặt lại bộ đếm thời gian
+        // Reset các bộ đếm thời gian
         spawnTimer = 0.0;
         lastUpdateNano = System.nanoTime();
         powerUps.clear();
@@ -158,8 +163,11 @@ public class GameManager {
             this.previousState = currentState;
             // Đồng bộ volume từ SoundManager
             settingsState.setMasterVolume(SoundManager.getInstance().getMasterVolume());
+            settingsState.setSfxVolume(SoundManager.getInstance().getSfxVolume());
         }
+        GameState previous = this.currentState;
         this.currentState = state;
+        handleMusicForTransition(previous, state);
     }
     
     public GameState getPreviousState() {
@@ -171,6 +179,13 @@ public class GameManager {
             initGame();
             startStateTransition(GameState.RUNNING);
             lastUpdateNano = System.nanoTime();
+            stopGameMusic();
+            stopMenuMusic();
+            stopGameOverMusic();
+        } else {
+            stopMenuMusic();
+            stopGameOverMusic();
+            startGameMusic();
         }
     }
 
@@ -221,10 +236,13 @@ public class GameManager {
         double deltaTime = (now - lastUpdateNano) / 1_000_000_000.0;
         lastUpdateNano = now;
 
-        // Generic state transition update (runs regardless of state)
+        // Cập nhật chuyển cảnh ở mọi state
         stateTransition.update(deltaTime);
         if (stateTransition.shouldSwitchNow()) {
-            currentState = stateTransition.getToState();
+            GameState from = currentState;
+            GameState to = stateTransition.getToState();
+            currentState = to;
+            handleMusicForTransition(from, to);
             stateTransition.markSwitchedHandled();
         }
 
@@ -243,7 +261,7 @@ public class GameManager {
                 isResetting = false;
                 resetTimer = 0.0;
             }
-            // Allow paddle to move during reset and keep ball attached
+            // Cho phép paddle di chuyển khi reset và vẫn giữ bóng dính
             paddle.update(SCREEN_WIDTH);
             if (ball != null && !ball.isLaunched()) {
                 updateBallAttachedPosition();
@@ -251,19 +269,19 @@ public class GameManager {
             return;
         }
 
-        // No physics suppression needed; state transitions are handled generically
+        // Không cần chặn physics; chuyển cảnh xử lý chung
 
         paddle.update(SCREEN_WIDTH);
         if (ball != null) {
             if (!ball.isLaunched()) {
-                // Ball is attached to paddle, update position relative to paddle
+        // Bóng đang dính paddle: cập nhật theo vị trí paddle
                 updateBallAttachedPosition();
             } else {
-                // Ball is moving, update normally
+        // Bóng đang bay: cập nhật bình thường
                 ball.update();
             }
         }
-        // Update extra balls
+        // Cập nhật các bóng phụ
         for (Ball eb : new ArrayList<>(extraBalls)) {
             eb.update();
         }
@@ -282,35 +300,30 @@ public class GameManager {
         checkWinCondition();
     }
 
-    private void attachBallToPaddle() {
-        // Attach to center by default
-        attachBallToPaddleAt(paddle.getX() + paddle.getWidth() / 2.0);
-    }
-
     private void attachBallToPaddleAt(double paddleX) {
-        // Calculate and store offset from paddle center
+        // Tính và lưu độ lệch so với tâm paddle
         double paddleCenterX = paddle.getX() + paddle.getWidth() / 2.0;
         ballPaddleOffset = paddleX - paddleCenterX;
         
-        // Clamp offset to keep ball within paddle bounds
+        // Giới hạn để bóng nằm trong bề rộng paddle
         double maxOffset = paddle.getWidth() / 2.0 - ball.getWidth() / 2.0;
         ballPaddleOffset = Math.max(-maxOffset, Math.min(maxOffset, ballPaddleOffset));
         
-        // Set ball position
+        // Đặt vị trí bóng
         updateBallAttachedPosition();
     }
     
     private void updateBallAttachedPosition() {
         if (ball == null || ball.isLaunched()) return;
         
-        // Ensure ball velocity is zero
+        // Đảm bảo vận tốc = 0
         ball.setDx(0);
         ball.setDy(0);
         
         double paddleCenterX = paddle.getX() + paddle.getWidth() / 2.0;
         double ballX = paddleCenterX + ballPaddleOffset - ball.getWidth() / 2.0;
         
-        // Clamp ball position to keep it within paddle bounds
+        // Giới hạn vị trí bóng trong bề rộng paddle
         double minX = paddle.getX();
         double maxX = paddle.getX() + paddle.getWidth() - ball.getWidth();
         ballX = Math.max(minX, Math.min(maxX, ballX));
@@ -320,7 +333,7 @@ public class GameManager {
     }
 
     private void updateEndlessMode(double deltaTime) {
-        // Gradually reduce spawn interval over time to increase difficulty
+        // Giảm dần thời gian sinh hàng để tăng độ khó
         spawnInterval = Math.max(MIN_SPAWN_INTERVAL_SECONDS, spawnInterval - SPAWN_INTERVAL_DECAY_PER_SEC * deltaTime);
 
         spawnTimer += deltaTime;
@@ -334,7 +347,7 @@ public class GameManager {
         if (comboCount > 0) {
             comboTimer -= deltaTime;
             if (comboTimer <= 0.0) {
-                // Combo timeout - reset combo
+                // Hết thời gian combo → reset
                 comboCount = 0;
                 comboTimer = 0.0;
             }
@@ -352,6 +365,159 @@ public class GameManager {
             b.getY() < -BRICK_HEIGHT);
     }
 
+    private boolean isMenuState(GameState state) {
+        return state == GameState.MENU
+                || state == GameState.HIGHSCORE
+                || state == GameState.INSTRUCTION
+                || state == GameState.SETTINGS;
+    }
+
+    private boolean isGameOverState(GameState state) {
+        return state == GameState.NAME_INPUT
+                || state == GameState.GAME_OVER
+                || state == GameState.GAME_WON;
+    }
+
+    private void handleMusicForTransition(GameState from, GameState to) {
+        if (from == to) {
+            return;
+        }
+
+        if (from == GameState.RUNNING && to == GameState.PAUSED) {
+            pauseGameMusic();
+            stopMenuMusic();
+            stopGameOverMusic();
+            return;
+        }
+
+        if (from == GameState.PAUSED && to == GameState.RUNNING) {
+            stopMenuMusic();
+            stopGameOverMusic();
+            resumeGameMusic();
+            return;
+        }
+
+        if (to == GameState.RUNNING) {
+            stopMenuMusic();
+            stopGameOverMusic();
+            startGameMusic();
+            return;
+        }
+
+        if (from == GameState.RUNNING) {
+            stopGameMusic();
+        } else if (from == GameState.PAUSED) {
+            stopGameMusic();
+        }
+
+        if (isGameOverState(to)) {
+            stopMenuMusic();
+            startGameOverMusic();
+            return;
+        }
+
+        if (isMenuState(to)) {
+            stopGameOverMusic();
+            startMenuMusic();
+        } else {
+            stopMenuMusic();
+            stopGameOverMusic();
+        }
+    }
+
+    private void startMenuMusic() {
+        if (menuMusicPlayer != null) {
+            return;
+        }
+        double volume = SoundManager.getInstance().getMasterVolume();
+        menuMusicPlayer = SoundManager.getInstance().playSoundLooping("mainMenuBGM", volume);
+        if (menuMusicPlayer == null) {
+            System.err.println("Không thể phát menu BGM");
+        }
+    }
+
+    private void stopMenuMusic() {
+        if (menuMusicPlayer != null) {
+            SoundManager.getInstance().stopLoop(menuMusicPlayer);
+            menuMusicPlayer = null;
+        }
+    }
+
+    private void startGameMusic() {
+        double volume = SoundManager.getInstance().getMasterVolume();
+        if (gameMusicPlayer == null) {
+            gameMusicPlayer = SoundManager.getInstance().playSoundLooping("inGameBGM", volume);
+            if (gameMusicPlayer == null) {
+                System.err.println("Không thể phát in-game BGM");
+                return;
+            }
+        } else {
+            gameMusicPlayer.setVolume(volume);
+            if (gameMusicPlayer.getStatus() != MediaPlayer.Status.PLAYING) {
+                gameMusicPlayer.play();
+            }
+        }
+    }
+
+    private void stopGameMusic() {
+        if (gameMusicPlayer != null) {
+            SoundManager.getInstance().stopLoop(gameMusicPlayer);
+            gameMusicPlayer = null;
+        }
+    }
+
+    private void pauseGameMusic() {
+        if (gameMusicPlayer != null && gameMusicPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+            gameMusicPlayer.pause();
+        }
+    }
+
+    private void resumeGameMusic() {
+        if (gameMusicPlayer != null) {
+            gameMusicPlayer.setVolume(SoundManager.getInstance().getMasterVolume());
+            if (gameMusicPlayer.getStatus() != MediaPlayer.Status.PLAYING) {
+                gameMusicPlayer.play();
+            }
+        } else {
+            startGameMusic();
+        }
+    }
+
+    private void startGameOverMusic() {
+        double volume = SoundManager.getInstance().getMasterVolume();
+        if (gameOverMusicPlayer == null) {
+            gameOverMusicPlayer = SoundManager.getInstance().playSoundLooping("gameOverBGM", volume);
+            if (gameOverMusicPlayer == null) {
+                System.err.println("Không thể phát game-over BGM");
+            }
+        } else {
+            gameOverMusicPlayer.setVolume(volume);
+            if (gameOverMusicPlayer.getStatus() != MediaPlayer.Status.PLAYING) {
+                gameOverMusicPlayer.play();
+            }
+        }
+    }
+
+    private void stopGameOverMusic() {
+        if (gameOverMusicPlayer != null) {
+            SoundManager.getInstance().stopLoop(gameOverMusicPlayer);
+            gameOverMusicPlayer = null;
+        }
+    }
+
+    public void refreshMusicVolume() {
+        double volume = SoundManager.getInstance().getMasterVolume();
+        if (menuMusicPlayer != null) {
+            menuMusicPlayer.setVolume(volume);
+        }
+        if (gameMusicPlayer != null) {
+            gameMusicPlayer.setVolume(volume);
+        }
+        if (gameOverMusicPlayer != null) {
+            gameOverMusicPlayer.setVolume(volume);
+        }
+    }
+
     private void checkBricksReachedPaddle() {
         for (Brick b : bricks) {
             if (!b.isDestroyed() && (b.getY() + b.getHeight() >= paddle.getY() - 1)) {
@@ -362,7 +528,7 @@ public class GameManager {
     }
 
     private void triggerGameOver() {
-        // Prepare NAME_INPUT data and start transition
+        // Chuẩn bị dữ liệu NAME_INPUT và bắt đầu chuyển cảnh
         scoreToSave = score;
         currentPlayerName = "";
         startStateTransition(GameState.NAME_INPUT);
@@ -400,18 +566,18 @@ public class GameManager {
     private void checkCollisions() {
         if (ball == null && extraBalls.isEmpty()) return;
 
-        // Check for the primary ball
+        // Kiểm tra bóng chính
         if (ball != null) {
             checkCollisionsFor(ball, true);
         }
-        // Check for extra balls
+        // Kiểm tra bóng phụ
         for (Ball eb : new ArrayList<>(extraBalls)) {
             checkCollisionsFor(eb, false);
         }
     }
 
     private void checkCollisionsFor(Ball b, boolean isPrimary) {
-        // Walls
+        // Tường
         if (b.getX() <= 0) {
             b.bounceX();
             b.resolveLeftWallCollision();
@@ -430,25 +596,26 @@ public class GameManager {
         // Paddle
         if (b.getBounds().intersects(paddle.getBounds())) {
             if (isPrimary && magnetActive) {
-                // Stick the main ball to paddle at the CENTER; wait for SPACE to launch
-                // Stop ball movement immediately
+                // Dính bóng chính vào tâm paddle; chờ SPACE để phóng
+                // Dừng chuyển động ngay
                 b.setDx(0);
                 b.setDy(0);
                 b.setLaunched(false);
-                // Attach to paddle center
+                // Gắn vào tâm paddle
                 double paddleCenterX = paddle.getX() + paddle.getWidth() / 2.0;
                 attachBallToPaddleAt(paddleCenterX);
             } else {
                 if (!isPrimary && magnetActive) {
-                    // Show "!extra" text when extra ball hits paddle during magnet
+                    // Hiện "!extra" khi bóng phụ chạm paddle trong hiệu ứng magnet
                     double textX = b.getX() + b.getWidth() / 2.0;
                     floatingTexts.add(new FloatingText(textX, paddle.getY() - 20, "!extra", Color.web("#ffcdcd"), 24, -0.8, 0.015));
                 }
                 b.calculateBounceFromPaddle(paddle);
             }
+            SoundManager.getInstance().playSound("paddleHit");
         }
 
-        // Bricks
+        // Gạch
         for (Brick brick : new ArrayList<>(bricks)) {
             if (brick.isDestroyed()) continue;
             if (b.handleCollisionWith(brick)) {
@@ -458,14 +625,14 @@ public class GameManager {
                 comboCount++;
                 comboTimer = COMBO_TIMEOUT;
                 
-                // Tính điểm với combo multiplier
+                // Tính điểm với hệ số combo
                 int baseScore = SCORE_PER_BRICK;
                 int comboMultiplier = (comboCount >= COMBO_MULTIPLIER_START) ? comboCount : 1;
                 int actualScore = baseScore * comboMultiplier;
                 score += actualScore;
                 
-                // Phát âm thanh khi gạch bị vỡ
-                SoundManager.getInstance().playSound("brick_hit");
+                // Phát âm thanh khi gạch vỡ
+                SoundManager.getInstance().playSound("brickHit");
                 
                 // Hiển thị điểm và combo
                 double textX = brick.getX() + brick.getWidth() / 2.0;
@@ -491,7 +658,7 @@ public class GameManager {
         int total = (ball != null ? 1 : 0) + extraBalls.size();
         if (total > 1) {
             if (isPrimary) {
-                // Promote one extra to primary
+                // Nâng một bóng phụ thành bóng chính
                 if (!extraBalls.isEmpty()) {
                     ball = extraBalls.remove(0);
                 } else {
@@ -599,7 +766,7 @@ public class GameManager {
     }
 
     private Brick createBrickFromPattern(int type, int x, int y) {
-        // Randomize normal bricks into power-up bricks at similar rate as initial generation
+        // Ngẫu nhiên hoá: một phần gạch thường thành gạch power-up, tỉ lệ giống ban đầu
         return BrickFactory.createFromPatternRandomized(random, type, x, y, BRICK_WIDTH, BRICK_HEIGHT);
     }
 
@@ -611,7 +778,7 @@ public class GameManager {
         if (lives <= 0) {
             triggerGameOver();
         } else {
-            // Start smooth reset transition instead of instant reset
+            // Bắt đầu hiệu ứng reset mượt thay vì reset tức thì
             isResetting = true;
             resetTimer = 0.0;
             extraBalls.clear();
@@ -630,21 +797,35 @@ public class GameManager {
     private void checkWinCondition() {
         boolean allDestroyed = bricks.stream().allMatch(Brick::isDestroyed);
         if (allDestroyed) {
-            currentState = GameState.GAME_WON;
+            setCurrentState(GameState.GAME_WON);
         }
     }
 
     public void pauseGame() {
         if (currentState == GameState.RUNNING) {
+            GameState previous = currentState;
             currentState = GameState.PAUSED;
             spawnTimer = 0.0;
+            handleMusicForTransition(previous, currentState);
         }
     }
 
     public void resumeGame() {
         if (currentState == GameState.PAUSED) {
+            GameState previous = currentState;
             currentState = GameState.RUNNING;
             lastUpdateNano = System.nanoTime();
+            handleMusicForTransition(previous, currentState);
+        }
+    }
+
+    public void onAudioReady() {
+        if (currentState == GameState.RUNNING) {
+            startGameMusic();
+        } else if (isGameOverState(currentState)) {
+            startGameOverMusic();
+        } else if (isMenuState(currentState)) {
+            startMenuMusic();
         }
     }
 
@@ -713,6 +894,7 @@ public class GameManager {
             }
             if (p.getBounds().intersects(paddle.getBounds())) {
                 p.apply(this);
+                SoundManager.getInstance().playSound("powerUp");
                 powerUps.remove(p);
             }
         }
@@ -765,7 +947,7 @@ public class GameManager {
         return magnetActive;
     }
 
-    // HUD helpers for power-up timers
+    // Thông tin HUD cho bộ đếm power-up
     public boolean isPaddleExpanded() {
         return paddleExpanded;
     }
@@ -788,7 +970,7 @@ public class GameManager {
 
     public void spawnExtraBalls(int count) {
         if (ball == null || !ball.isLaunched()) return;
-        // Spawn balls from the primary ball position with diverging velocities
+        // Sinh bóng từ vị trí bóng chính với hướng vận tốc khác nhau
         int originX = ball.getX();
         int originY = ball.getY();
         int size = BALL_SIZE;

@@ -12,10 +12,10 @@ public class AssetManager {
     // Biến static để giữ instance duy nhất
     private static AssetManager instance;
 
-    // Map để lưu trữ các hình ảnh đã được tải
+    // Map lưu các ảnh (images) đã tải
     private final Map<String, Image> images = new HashMap<>();
 
-    // Constructor là private để ngăn việc tạo instance từ bên ngoài
+    // Constructor private để ngăn tạo instance từ bên ngoài
     private AssetManager() {}
 
     /**
@@ -41,11 +41,11 @@ public class AssetManager {
         loadImage("strong_brick_cracked", "/images/strong_brick_cracked.png");
         loadImage("powerup_brick", "/images/powerup_brick.png");
 
-        // Power-up sprites
+    // Sprite cho power-up
         loadImage("powerup_expand", "/images/expand_paddle_powerup.png");
         loadImage("powerup_multi", "/images/multi_ball_powerup.png");
         loadImage("powerup_extralife", "/images/extra_life_powerup.png");
-        // Magnet power-up (ensure the file exists at this path)
+    // Power-up magnet (đảm bảo file tồn tại tại đường dẫn này)
         loadImage("powerup_magnet", "/images/magnet_powerup.png");
 
     }

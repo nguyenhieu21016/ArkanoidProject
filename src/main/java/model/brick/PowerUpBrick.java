@@ -19,8 +19,8 @@ public class PowerUpBrick extends Brick {
     }
 
     /**
-     * Sinh power-up tương ứng khi gạch bị phá.
-     * @return đối tượng PowerUp rơi xuống
+     * Random ra power-up tương ứng khi gạch bị vỡ
+     * @return power-up rơi xuống
      */
     public PowerUp spawnPowerUp() {
         int centerX = getX() + getWidth() / 2 - 10;

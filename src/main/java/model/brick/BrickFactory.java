@@ -2,24 +2,20 @@ package model.brick;
 
 import java.util.Random;
 
-/**
- * Factory tạo ra các đối tượng Brick theo xác suất hoặc theo mã kiểu.
- * Mục tiêu: gom logic khởi tạo gạch về một nơi duy nhất để dễ bảo trì/mở rộng.
- */
 public final class BrickFactory {
 
     private BrickFactory() {
     }
 
     /**
-     * Tạo gạch ngẫu nhiên dựa trên xác suất rỗng/thường/đặc biệt.
-     * @param random bộ sinh ngẫu nhiên
+     * Tạo gạch ngẫu nhiên dựa trên xác suất.
+     * @param random random
      * @param x tọa độ X
      * @param y tọa độ Y
      * @param width chiều rộng gạch
      * @param height chiều cao gạch
-     * @param emptyChance xác suất ô trống (0..1)
-     * @param normalChance xác suất gạch thường (0..1), phần còn lại là gạch mạnh
+     * @param emptyChance xác suất ô trống
+     * @param normalChance xác suất gạch thường
      * @return Brick hoặc null nếu ô trống
      */
     public static Brick createRandomBrick(Random random,
@@ -33,7 +29,7 @@ public final class BrickFactory {
         if (r < (int) (emptyChance * 100)) {
             return null;
         } else if (r < (int) (normalChance * 100)) {
-            // 25% of normal bricks are power-up bricks (easier)
+            // 25% gạch thường đc random thành power-up
             int pr = random.nextInt(100);
             if (pr < 25) {
                 return new PowerUpBrick(x, y, width, height);
@@ -45,7 +41,7 @@ public final class BrickFactory {
     }
 
     /**
-     * Tạo gạch dựa trên mã kiểu (0: rỗng, 1: thường, 2: mạnh).
+     * Tạo gạch dựa trên pattern.
      */
     public static Brick createFromPattern(int type, int x, int y, int width, int height) {
         return switch (type) {
@@ -56,8 +52,7 @@ public final class BrickFactory {
     }
 
     /**
-     * Tạo gạch dựa trên mã kiểu nhưng có ngẫu nhiên hoá: một phần gạch thường sẽ là PowerUpBrick
-     * để phù hợp với hành vi khởi tạo ban đầu.
+     * Tạo gạch dựa trên pattern nhưng có ngẫu nhiên.
      */
     public static Brick createFromPatternRandomized(Random random,
                                                    int type,
@@ -69,7 +64,7 @@ public final class BrickFactory {
             case 0:
                 return null;
             case 1: {
-                // 25% cơ hội chuyển thành PowerUpBrick
+                // 25% cơ hội biến thành PowerUpBrick
                 if (random.nextInt(100) < 25) {
                     return new PowerUpBrick(x, y, width, height);
                 }

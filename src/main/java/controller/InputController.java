@@ -7,6 +7,7 @@ import model.state.GameState;
 import model.state.MenuState;
 import model.state.PauseMenuState;
 import model.state.SettingsState;
+import util.SoundManager;
 
 public class InputController {
 
@@ -45,6 +46,7 @@ public class InputController {
 
     private void handleNameInput(KeyCode code) {
         if (code == KeyCode.ENTER) {
+            SoundManager.getInstance().playSound("selected");
             gameManager.saveHighScore();
         } else if (code == KeyCode.BACK_SPACE) {
             String currentName = gameManager.getCurrentPlayerName();
@@ -70,20 +72,31 @@ public class InputController {
     private void handleMenuInput(KeyCode code) {
         MenuState menuState = gameManager.getMenuState();
         switch (code) {
-            case UP -> menuState.moveUp();
-            case DOWN -> menuState.moveDown();
+            case UP -> {
+                menuState.moveUp();
+                SoundManager.getInstance().playSound("optionChange");
+            }
+            case DOWN -> {
+                menuState.moveDown();
+                SoundManager.getInstance().playSound("optionChange");
+            }
             case ENTER -> executeMenuAction(menuState.confirm());
+            default -> {}
         }
     }
 
 
     private void executeMenuAction(MenuState.Action action) {
+        if (action != MenuState.Action.NONE) {
+            SoundManager.getInstance().playSound("selected");
+        }
         switch (action) {
             case START -> gameManager.startGame();
             case EXIT -> System.exit(0);
             case HIGHSCORE -> gameManager.setCurrentState(GameState.HIGHSCORE);
             case INSTRUCTION -> gameManager.setCurrentState(GameState.INSTRUCTION);
             case SETTINGS -> gameManager.setCurrentState(GameState.SETTINGS);
+            case NONE -> {}
         }
     }
 
@@ -100,12 +113,13 @@ public class InputController {
             case ESCAPE -> gameManager.setCurrentState(GameState.MENU);
             case SPACE -> launchBall();
             case P -> gameManager.pauseGame();
+            default -> {}
         }
     }
 
     private void launchBall() {
         if (!gameManager.getBall().isLaunched()) {
-            // If the ball is attached due to magnet, launch straight up
+            // Nếu bóng đang dính (magnet), launch thẳng lên trên
             if (gameManager.isMagnetActive()) {
                 gameManager.getBall().launch(0, -BALL_LAUNCH_SPEED_Y);
             } else {
@@ -118,8 +132,14 @@ public class InputController {
     private void handlePausedInput(KeyCode code) {
         switch (code) {
             case P -> gameManager.resumeGame();
-            case UP -> gameManager.getPauseMenuState().moveUp();
-            case DOWN -> gameManager.getPauseMenuState().moveDown();
+            case UP -> {
+                gameManager.getPauseMenuState().moveUp();
+                SoundManager.getInstance().playSound("optionChange");
+            }
+            case DOWN -> {
+                gameManager.getPauseMenuState().moveDown();
+                SoundManager.getInstance().playSound("optionChange");
+            }
             case ENTER -> executePauseAction(gameManager.getPauseMenuState().confirm());
             case ESCAPE -> gameManager.resumeGame();
             default -> {}
@@ -127,6 +147,9 @@ public class InputController {
     }
 
     private void executePauseAction(PauseMenuState.Action action) {
+        if (action != PauseMenuState.Action.NONE) {
+            SoundManager.getInstance().playSound("selected");
+        }
         switch (action) {
             case RESUME -> gameManager.resumeGame();
             case RESTART -> gameManager.startGame();
@@ -139,6 +162,7 @@ public class InputController {
 
     private void handleGameOverInput(KeyCode code) {
         if (code == KeyCode.SPACE) {
+            SoundManager.getInstance().playSound("selected");
             gameManager.startGame();
         }
     }
@@ -146,30 +170,43 @@ public class InputController {
     private void handleSettingsInput(KeyCode code) {
         SettingsState settingsState = gameManager.getSettingsState();
         switch (code) {
-            case UP -> settingsState.moveUp();
-            case DOWN -> settingsState.moveDown();
+            case UP -> {
+                settingsState.moveUp();
+                SoundManager.getInstance().playSound("optionChange");
+            }
+            case DOWN -> {
+                settingsState.moveDown();
+                SoundManager.getInstance().playSound("optionChange");
+            }
             case LEFT, A -> {
                 settingsState.adjustVolumeLeft();
                 applyVolumeSettings();
+                SoundManager.getInstance().playSound("optionChange");
             }
             case RIGHT, D -> {
                 settingsState.adjustVolumeRight();
                 applyVolumeSettings();
+                SoundManager.getInstance().playSound("optionChange");
             }
             case ENTER -> {
                 SettingsState.Action action = settingsState.confirm();
                 if (action == SettingsState.Action.BACK) {
+                    SoundManager.getInstance().playSound("selected");
                     returnToPreviousState();
                 }
             }
             case ESCAPE -> returnToPreviousState();
+            default -> {}
         }
     }
 
     private void applyVolumeSettings() {
         SettingsState settingsState = gameManager.getSettingsState();
-        util.SoundManager.getInstance().setMasterVolume(settingsState.getMasterVolume());
+        util.SoundManager soundManager = util.SoundManager.getInstance();
+        soundManager.setMasterVolume(settingsState.getMasterVolume());
+        soundManager.setSfxVolume(settingsState.getSfxVolume());
         // SFX volume có thể được áp dụng riêng nếu cần
+        gameManager.refreshMusicVolume();
     }
 
     private void returnToPreviousState() {

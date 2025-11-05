@@ -8,7 +8,7 @@ public class SettingsState {
     private int selectedIndex = 0;
     private final String[] options = {"Master Volume", "SFX Volume", "Back"};
     
-    // Volume values (0.0 - 1.0)
+    // Giá trị âm lượng (0.0 - 1.0)
     private double masterVolume = 0.7;
     private double sfxVolume = 0.7;
     

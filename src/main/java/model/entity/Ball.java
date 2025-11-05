@@ -1,7 +1,6 @@
 package model.entity;
 
 import model.brick.Brick;
-import model.entity.Paddle;
 import java.awt.Rectangle;
 
 public class Ball extends MovableObject {
@@ -36,7 +35,11 @@ public class Ball extends MovableObject {
     public void resolveLeftWallCollision() {
         setX(0);
         if (dx <= 0) {
-            dx = Math.max(MIN_HORIZONTAL_SPEED, 3);
+            int speed = Math.max(MIN_HORIZONTAL_SPEED, Math.abs(dx));
+            if (speed == 0) {
+                speed = MIN_HORIZONTAL_SPEED;
+            }
+            dx = speed;
         }
     }
 
@@ -45,9 +48,13 @@ public class Ball extends MovableObject {
      * @param screenWidth độ rộng màn hình
      */
     public void resolveRightWallCollision(int screenWidth) {
-            setX(screenWidth - getWidth());
+        setX(screenWidth - getWidth());
         if (dx >= 0) {
-            dx = -Math.max(MIN_HORIZONTAL_SPEED, 3);
+            int speed = Math.max(MIN_HORIZONTAL_SPEED, Math.abs(dx));
+            if (speed == 0) {
+                speed = MIN_HORIZONTAL_SPEED;
+            }
+            dx = -speed;
         }
     }
 
@@ -65,22 +72,30 @@ public class Ball extends MovableObject {
         hitPosition = Math.max(0.0, Math.min(1.0, hitPosition));
 
         double normalizedHitPosition = (hitPosition - 0.5) * 2.0;
-        
         double minAngle = Math.toRadians(MIN_BOUNCE_ANGLE_DEGREES);
         double maxAngle = Math.toRadians(MAX_BOUNCE_ANGLE_DEGREES);
-        double bounceAngle = minAngle + (maxAngle - minAngle) * Math.abs(normalizedHitPosition);
-        
-        if (normalizedHitPosition < 0) {
-            bounceAngle = -bounceAngle;
+        double desiredAngle = normalizedHitPosition * maxAngle;
+
+        if (Math.abs(normalizedHitPosition) < 0.05) {
+            desiredAngle = 0.0;
+        } else if (Math.abs(desiredAngle) < minAngle) {
+            desiredAngle = Math.signum(desiredAngle) * minAngle;
         }
 
         double currentSpeed = Math.sqrt(dx * dx + dy * dy);
+        if (currentSpeed == 0) {
+            currentSpeed = Math.sqrt(Math.pow(MIN_HORIZONTAL_SPEED, 2) + Math.pow(Math.max(1, Math.abs(dy)), 2));
+        }
 
-        double newDx = currentSpeed * Math.sin(bounceAngle);
-        double newDy = -currentSpeed * Math.cos(bounceAngle);
+        double newDx = currentSpeed * Math.sin(desiredAngle);
+        double newDy = -currentSpeed * Math.cos(desiredAngle);
 
         dx = (int) Math.round(newDx);
         dy = (int) Math.round(newDy);
+
+        if (dx == 0 && Math.abs(normalizedHitPosition) >= 0.05) {
+            dx = (int) Math.copySign(Math.max(MIN_HORIZONTAL_SPEED, 1), normalizedHitPosition);
+        }
     }
 
     

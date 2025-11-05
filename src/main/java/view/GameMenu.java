@@ -60,7 +60,7 @@ public class GameMenu {
     public void renderInstruction(GraphicsContext gc) {
         renderBackgroundAndOverlay(gc);
 
-        // Tiêu đề hướng dẫn
+        // Tiêu đề phần hướng dẫn
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("m6x11", 40));
         gc.fillText("HOW TO PLAY", 250, 100);
@@ -88,7 +88,7 @@ public class GameMenu {
         gc.setFont(new Font("m6x11", 36));
         gc.fillText("PAUSED", 300, 150);
 
-        // BACK button
+        // Nút Back
         gc.setFont(new Font("m6x11", 22));
         gc.setFill(Color.GRAY);
         gc.fillText("Back", 40, 60);
@@ -120,7 +120,7 @@ public class GameMenu {
         gc.setFont(new Font("m6x11", 40));
         gc.fillText("SETTINGS", 280, 120);
 
-        // Back button
+        // Nút Back
         gc.setFont(new Font("m6x11", 22));
         gc.setFill(Color.GRAY);
         gc.fillText("Back", 40, 60);
@@ -142,12 +142,12 @@ public class GameMenu {
             // Hiển thị label
             gc.fillText(label, 200, 220 + i * 60);
 
-            // Hiển thị volume values (chỉ text, không có progress bar)
+            // Hiển thị giá trị volume (chỉ text, không có progress bar)
             if (i < 2) {
                 double volume = (i == 0) ? settingsState.getMasterVolume() : settingsState.getSfxVolume();
                 int volumePercent = (int) Math.round(volume * 100);
 
-                // Volume value
+                // Giá trị volume
                 gc.setFill(Color.WHITE);
                 gc.setFont(new Font("m6x11", 22));
                 gc.fillText(volumePercent + "%", 500, 220 + i * 60);
@@ -157,7 +157,7 @@ public class GameMenu {
             }
         }
 
-        // Instructions
+        // Hướng dẫn
         gc.setFont(new Font("m6x11", 18));
         gc.setFill(Color.WHITE);
         gc.fillText("Use UP/DOWN to navigate, LEFT/RIGHT or A/D to adjust volume", 120, 520);
