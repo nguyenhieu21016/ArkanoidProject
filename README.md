@@ -10,4 +10,3 @@
 - **Floating HUD & feedback**: Combo text, điểm thưởng, cảnh báo “Life Lost!”… giúp người chơi nắm bắt trạng thái trận đấu.
 - **Highscore persistence**: Điểm số cao được lưu vào `highscores.txt`, cho phép ghi danh bằng tên sau mỗi trận.
 - **Asset management tiện lợi**: `AssetManager` và `SoundManager` tự động tải hình/sound trong `/images` và `/sounds`, hỗ trợ mở rộng asset nhanh chóng.
-- **Mã nguồn module hóa**: Controller–Core–Model–View tách bạch, dễ bảo trì và mở rộng; tương thích với Java 17 & JavaFX 21 qua Maven.
